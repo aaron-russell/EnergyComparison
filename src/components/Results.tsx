@@ -6,17 +6,47 @@ type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string };
 
 export function ReplayResults({ results, tariffs, baselineId }: Props) {
   const baseline = results.find((result) => result.tariffId === baselineId)!;
+  const annual = results[0].months.length === 12 && results[0].days >= 365;
   return (
     <div className="results">
+      <section className="panel annual-summary">
+        <div>
+          <span className="badge">{annual ? '12-MONTH VIEW' : 'SELECTED PERIOD'}</span>
+          <h2>{annual ? 'Annual usage and monthly cost' : 'Usage and cost for this period'}</h2>
+          <p className="muted">Every tariff is priced against the same household energy usage.</p>
+        </div>
+        <div className="annual-metrics">
+          <div>
+            <span>Electricity usage</span>
+            <strong>
+              {formatKwh(results[0].energy.electricity)} kWh{annual ? '/yr' : ''}
+            </strong>
+          </div>
+          <div>
+            <span>Gas usage</span>
+            <strong>
+              {formatKwh(results[0].energy.gas)} kWh{annual ? '/yr' : ''}
+            </strong>
+          </div>
+          <div>
+            <span>{annual ? 'Baseline annual cost' : 'Baseline period cost'}</span>
+            <strong>{money(baseline.total)}</strong>
+          </div>
+          <div>
+            <span>{annual ? 'Baseline monthly cost' : 'Baseline monthly equivalent'}</span>
+            <strong>{money(baseline.monthlyEquivalent)}</strong>
+          </div>
+        </div>
+      </section>
       <section className="panel">
-        <h2>Historical replay costs</h2>
+        <h2>{annual ? 'Annual tariff comparison' : 'Historical replay costs'}</h2>
         <div className="table-scroll">
           <table>
             <caption>Identical period, supplies and energy for all tariffs</caption>
             <thead>
               <tr>
                 <th scope="col">Tariff</th>
-                <th scope="col">Period total</th>
+                <th scope="col">{annual ? 'Annual cost' : 'Period total'}</th>
                 <th scope="col">Monthly equivalent</th>
                 <th scope="col">Difference from baseline</th>
               </tr>
@@ -50,6 +80,9 @@ export function ReplayResults({ results, tariffs, baselineId }: Props) {
       ))}
     </div>
   );
+}
+function formatKwh(value: string): string {
+  return new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(Number(value));
 }
 function MonthlyChart({ results }: { results: ReplayResult[] }) {
   const shown = results.slice(0, 2);
