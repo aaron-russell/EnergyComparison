@@ -33,6 +33,9 @@ the stable preview alias and immutable deployment URL. Passing `GITHUB_TOKEN` al
 Deployment records for both production and preview deployments. Pull requests from forks are skipped
 because Cloudflare deployment secrets are not exposed to fork workflows.
 
+The workflow grants `issues: write` so the preview step can create or update the pull request comment;
+GitHub models pull request conversation comments through its Issues API.
+
 The workflow can also be started manually with the `workflow_dispatch` action in GitHub. This is the
 deployment path for this project: disable Cloudflare Pages' automatic Git deployment for the project
 before enabling it, or every push to `main` will create duplicate deployments. Add these repository
