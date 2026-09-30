@@ -14,7 +14,9 @@ export default defineConfig({
   preview: { headers },
   plugins: [react()],
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.{ts,tsx}'],
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],
@@ -34,10 +36,10 @@ export default defineConfig({
         'src/generated/**',
       ],
       thresholds: {
-        statements: 50,
-        branches: 50,
-        functions: 40,
-        lines: 50,
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
       },
     },
   },
