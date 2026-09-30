@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { prepareReplay } from '../src/state/replay-job';
+import { isAnnualPeriod } from '../src/core/time';
 import { exampleTariffs } from '../src/fixtures/synthetic';
 import type { SessionData } from '../src/state/session';
 
@@ -45,5 +46,22 @@ describe('replay tariff compatibility', () => {
     expect(() =>
       prepareReplay(session([electricity], electricity.id), 'dual', 'observed', 'all'),
     ).toThrow('baseline tariff does not include prices');
+  });
+});
+
+describe('annual result classification', () => {
+  it('recognises complete normal and leap calendar years only', () => {
+    expect(
+      isAnnualPeriod({ start: '2023-01-01T00:00:00Z', end: '2024-01-01T00:00:00Z' }, true),
+    ).toBe(true);
+    expect(
+      isAnnualPeriod({ start: '2024-01-01T00:00:00Z', end: '2025-01-01T00:00:00Z' }, true),
+    ).toBe(true);
+    expect(
+      isAnnualPeriod({ start: '2024-01-15T00:00:00Z', end: '2025-01-15T00:00:00Z' }, true),
+    ).toBe(false);
+    expect(
+      isAnnualPeriod({ start: '2023-01-01T00:00:00Z', end: '2024-01-01T00:00:00Z' }, false),
+    ).toBe(false);
   });
 });

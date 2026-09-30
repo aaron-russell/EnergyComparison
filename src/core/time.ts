@@ -74,3 +74,16 @@ export function overlapDuration(first: Period, second: Period): number {
     Math.min(ms(first.end), ms(second.end)) - Math.max(ms(first.start), ms(second.start)),
   );
 }
+
+export function isAnnualPeriod(period: Period, complete: boolean): boolean {
+  const start = local(period.start).toPlainDate();
+  const end = local(period.end).toPlainDate();
+  return (
+    complete &&
+    start.month === 1 &&
+    start.day === 1 &&
+    end.month === 1 &&
+    end.day === 1 &&
+    end.year === start.year + 1
+  );
+}

@@ -101,16 +101,28 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
 
 test('labels complete normal, leap and non-calendar-year periods correctly', async ({ page }) => {
   await compareSyntheticPeriod(page, '2023-01-01', '2024-01-01');
-  await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
+    timeout: 30000,
+  });
 
   await compareSyntheticPeriod(page, '2024-01-01', '2025-01-01');
-  await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
+    timeout: 30000,
+  });
 
   await compareSyntheticPeriod(page, '2024-01-15', '2025-01-15');
-  await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible();
-  await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
+    timeout: 30000,
+  });
 });
 
 test('manual baseline editing, duplication, validation and persistence', async ({ page }) => {

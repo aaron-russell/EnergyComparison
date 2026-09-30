@@ -1,12 +1,13 @@
 import Decimal, { sum } from '../core/decimal';
-import type { ReplayResult, Tariff } from '../core/types';
+import { isAnnualPeriod } from '../core/time';
+import type { Period, ReplayResult, Tariff } from '../core/types';
 const currency = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
 const money = (value: string) => currency.format(Number(value));
-type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string };
+type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string; period: Period };
 
-export function ReplayResults({ results, tariffs, baselineId }: Props) {
+export function ReplayResults({ results, tariffs, baselineId, period }: Props) {
   const baseline = results.find((result) => result.tariffId === baselineId)!;
-  const annual = results[0].complete && results[0].months.length === 12 && results[0].days >= 365;
+  const annual = isAnnualPeriod(period, results[0].complete);
   return (
     <div className="results">
       <AnnualSummary result={results[0]} baseline={baseline} annual={annual} />
@@ -53,6 +54,7 @@ export function ReplayResults({ results, tariffs, baselineId }: Props) {
     </div>
   );
 }
+
 function AnnualSummary({
   result,
   baseline,
