@@ -4,19 +4,23 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 concurrency:
-  group: cloudflare-pages-production
+  group: cloudflare-pages-${{ github.event_name }}-${{ github.event.pull_request.number || 'production' }}
   cancel-in-progress: true
 
 permissions:
   contents: read
   deployments: write
+  pull-requests: write
 
 jobs:
-  deploy:
-    name: Deploy
+  production:
+    name: Deploy production
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -42,3 +46,83 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=energy-replay
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  preview:
+    name: Deploy PR preview
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    concurrency:
+      group: cloudflare-pages-preview-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy preview to Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=energy-replay --branch=pr-${{ github.event.pull_request.number }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment preview URL on pull request
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+          IMMUTABLE_URL: ${{ steps.deploy.outputs.deployment-url }}
+        with:
+          script: |
+            const marker = '<!-- cloudflare-pages-preview -->';
+            const previewUrl = process.env.PREVIEW_URL;
+            const immutableUrl = process.env.IMMUTABLE_URL;
+            const body = [
+              marker,
+              '## Cloudflare Pages preview',
+              '',
+              `Preview: ${previewUrl ? `[Open preview](${previewUrl})` : 'URL unavailable'}`,
+              immutableUrl && immutableUrl !== previewUrl
+                ? `\nImmutable deployment: [Open deployment](${immutableUrl})`
+                : '',
+              '',
+              `Updated for commit \`${context.payload.pull_request.head.sha.slice(0, 7)}\`.`,
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

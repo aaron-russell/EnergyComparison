@@ -27,10 +27,16 @@ CI secret store. These are deployment credentials, never browser build variables
 ## GitHub Actions with Wrangler
 
 The repository workflow at `.github/workflows/deploy.yml` builds and deploys the Pages project with
-`cloudflare/wrangler-action` when changes land on `main`. It can also be started manually with the
-`workflow_dispatch` action in GitHub. This workflow is the deployment path for this project: disable
-Cloudflare Pages' automatic Git deployment for the project before enabling it, or every push to
-`main` will create duplicate deployments. Add these repository secrets before enabling the workflow:
+`cloudflare/wrangler-action` when changes land on `main`, and creates a `pr-<number>` preview branch
+for pull requests from this repository. The preview job updates a single pull request comment with
+the stable preview alias and immutable deployment URL. Passing `GITHUB_TOKEN` also creates GitHub
+Deployment records for both production and preview deployments. Pull requests from forks are skipped
+because Cloudflare deployment secrets are not exposed to fork workflows.
+
+The workflow can also be started manually with the `workflow_dispatch` action in GitHub. This is the
+deployment path for this project: disable Cloudflare Pages' automatic Git deployment for the project
+before enabling it, or every push to `main` will create duplicate deployments. Add these repository
+secrets before enabling the workflow:
 
 - `CLOUDFLARE_API_TOKEN`: a narrowly scoped token with Pages project edit permission.
 - `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account that owns the Pages project.
