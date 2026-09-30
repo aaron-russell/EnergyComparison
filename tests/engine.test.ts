@@ -86,10 +86,11 @@ describe('time and tariff engine', () => {
     expect(defaultPeriod.start).not.toBe(defaultPeriod.end);
   });
   it('conserves cost under arbitrary decimal energy values', () => {
+    const firstReading = readings()[0];
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 100000 }), (units) => {
         const kWh = new Decimal(units).div(10000).toString();
-        const result = replay(flat(), [{ ...readings()[0], kWh }], [supply], period);
+        const result = replay(flat(), [{ ...firstReading, kWh }], [supply], period);
         expect(result.months[0].electricity).toBe(
           new Decimal(kWh).mul(25).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2),
         );

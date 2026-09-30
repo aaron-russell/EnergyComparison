@@ -1,3 +1,4 @@
+import { Selection } from '../components/Selection';
 import { useState } from 'react';
 import { chargingProviders } from '../adapters/registries';
 import type { ChargingPreview } from '../adapters/contracts';
@@ -50,28 +51,23 @@ export function ChargingPage({ data, update, next }: SessionProps) {
       </PageHeading>
       <section className="panel">
         <h2>Charging source</h2>
-        <label className="field">
-          Electricity supply
-          <select value={supplyRef} onChange={(event) => setSupplyRef(event.target.value)}>
-            {data.supplies
-              .filter((supply) => supply.fuel === 'electricity')
-              .map((supply) => (
-                <option key={supply.ref} value={supply.ref}>
-                  {supply.label}
-                </option>
-              ))}
-          </select>
-        </label>
-        <label className="field">
-          Charging integration
-          <select value={providerId} onChange={(event) => setProviderId(event.target.value)}>
-            {chargingProviders.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Selection
+          label="Electricity supply"
+          value={supplyRef}
+          change={setSupplyRef}
+          options={data.supplies
+            .filter((supply) => supply.fuel === 'electricity')
+            .map((supply) => ({ value: supply.ref, label: supply.label }))}
+        />
+        <Selection
+          label="Charging integration"
+          value={providerId}
+          change={setProviderId}
+          options={chargingProviders.map((provider) => ({
+            value: provider.id,
+            label: provider.name,
+          }))}
+        />
         <p className="muted">{provider.description}</p>
         {supplyRef &&
           (provider.method === 'file' ? (
@@ -81,24 +77,7 @@ export function ChargingPage({ data, update, next }: SessionProps) {
           ))}
         {preview && <MappingPreview preview={preview} />}
       </section>
-      <section className="panel">
-        <h2>Or review suggested charging</h2>
-        <p>
-          A separate estimate finds excess demand above 60% of charger power for at least one hour.
-          Other appliances can create false positives.
-        </p>
-        <label className="field">
-          Charger power (kW)
-          <input
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={power}
-            onChange={(event) => setPower(event.target.value)}
-          />
-        </label>
-        <button onClick={detect}>Suggest sessions from usage</button>
-      </section>
+      <SpikeControls power={power} setPower={setPower} detect={detect} />
       {!!data.charging.length && (
         <section className="panel">
           <h2>Review {data.charging.length} sessions</h2>
@@ -129,5 +108,36 @@ function MappingPreview({ preview }: { preview: ChargingPreview }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function SpikeControls({
+  power,
+  setPower,
+  detect,
+}: {
+  power: string;
+  setPower: (value: string) => void;
+  detect: () => void;
+}) {
+  return (
+    <section className="panel">
+      <h2>Or review suggested charging</h2>
+      <p>
+        A separate estimate finds excess demand above 60% of charger power for at least one hour.
+        Other appliances can create false positives.
+      </p>
+      <label className="field">
+        Charger power (kW)
+        <input
+          type="number"
+          min="0.1"
+          step="0.1"
+          value={power}
+          onChange={(event) => setPower(event.target.value)}
+        />
+      </label>
+      <button onClick={detect}>Suggest sessions from usage</button>
+    </section>
   );
 }

@@ -1,3 +1,5 @@
+import { prepareReplay } from '../state/replay-job';
+import { Selection } from '../components/Selection';
 import { useState } from 'react';
 import type { ReplayResult } from '../core/types';
 import type { SessionProps } from '../state/session';
@@ -13,51 +15,24 @@ export function ComparePage({ data }: SessionProps) {
   const [error, setError] = useState('');
   const job = useJob();
   const compare = () => {
-    const supplies = data.supplies.filter((supply) => scope === 'dual' || supply.fuel === scope);
-    if (scope === 'dual' && new Set(supplies.map((supply) => supply.fuel)).size !== 2) {
-      setError('Dual-fuel comparison needs both fuels. Select electricity-only or gas-only.');
-      return;
-    }
-    if (data.conflicts) {
-      setError('Resolve conflicting import records before comparison.');
-      return;
-    }
-    const readings = (view === 'estimated' ? data.estimated!.readings : data.readings).filter(
-      (reading) => supplies.some((supply) => supply.ref === reading.supplyRef),
-    );
-    const tariffs = data.tariffs.filter(
-      (tariff) =>
-        tariff.id === data.baselineId || renewable === 'all' || tariff.renewable === renewable,
-    );
-    if (!tariffs.some((tariff) => tariff.id === data.baselineId)) {
-      setError('Choose a baseline tariff first.');
-      return;
-    }
-    setError('');
-    setResults([]);
-    job.run(
-      {
-        kind: 'replay',
-        readings,
-        supplies,
-        period: data.period,
-        charging: data.charging.filter((session) =>
-          supplies.some((supply) => supply.ref === session.supplyRef),
-        ),
-        tariffs,
-      },
-      (output) => {
+    try {
+      const request = prepareReplay(data, scope, view, renewable);
+      setError('');
+      setResults([]);
+      job.run(request, (output) => {
         if (output.kind === 'replay') {
           setResults(output.results);
         }
-      },
-    );
+      });
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Check the comparison options.');
+    }
   };
-  const change =
-    (setter: (value: string) => void) => (event: React.ChangeEvent<HTMLSelectElement>) => {
-      setter(event.target.value);
-      setResults([]);
-    };
+  const change = (setter: (value: string) => void) => (value: string) => {
+    job.cancel();
+    setter(value);
+    setResults([]);
+  };
   return (
     <>
       <PageHeading eyebrow="06 / COMPARE" title="Same usage. Different possibilities.">
@@ -65,34 +40,15 @@ export function ComparePage({ data }: SessionProps) {
         include export income or battery simulation.
       </PageHeading>
       <section className="panel">
-        <div className="form-row">
-          <label className="field">
-            Fuel comparison
-            <select value={scope} onChange={change(setScope)}>
-              <option value="dual">Dual fuel</option>
-              <option value="electricity">Electricity only</option>
-              <option value="gas">Gas only</option>
-            </select>
-          </label>
-          <label className="field">
-            Data view
-            <select value={view} onChange={change(setView)}>
-              <option value="observed">Observed only</option>
-              <option value="estimated" disabled={!data.estimated}>
-                Estimated full period
-              </option>
-            </select>
-          </label>
-          <label className="field">
-            Renewable alternatives
-            <select value={renewable} onChange={change(setRenewable)}>
-              <option value="all">All / unknown included</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-              <option value="unknown">Unknown</option>
-            </select>
-          </label>
-        </div>
+        <CompareControls
+          scope={scope}
+          view={view}
+          renewable={renewable}
+          hasEstimate={!!data.estimated}
+          scopeChange={change(setScope)}
+          viewChange={change(setView)}
+          renewableChange={change(setRenewable)}
+        />
         <button
           className="primary"
           disabled={job.busy || data.tariffs.length < 2}
@@ -109,25 +65,94 @@ export function ComparePage({ data }: SessionProps) {
       </section>
       {!!results.length && (
         <>
-          <div className="notice">
-            <div>
-              <strong>
-                {view === 'estimated'
-                  ? `Estimated full period · ${data.estimated?.estimatedShare}% estimated energy`
-                  : results[0].complete
-                    ? 'Complete observed period'
-                    : 'Incomplete observed totals — missing energy is excluded'}
-              </strong>
-              <p>
-                {results[0].days} local calendar days. Standing charges and prorated credits cover
-                every day. Monthly equivalent is period total divided by the number of months. A
-                12-month replay is an annual historical cost.
-              </p>
-            </div>
-          </div>
+          <ReplayNotice
+            result={results[0]}
+            estimatedShare={view === 'estimated' ? data.estimated?.estimatedShare : undefined}
+          />
           <ReplayResults results={results} tariffs={data.tariffs} baselineId={data.baselineId} />
         </>
       )}
     </>
+  );
+}
+
+function CompareControls({
+  scope,
+  view,
+  renewable,
+  hasEstimate,
+  scopeChange,
+  viewChange,
+  renewableChange,
+}: {
+  scope: string;
+  view: string;
+  renewable: string;
+  hasEstimate: boolean;
+  scopeChange: (value: string) => void;
+  viewChange: (value: string) => void;
+  renewableChange: (value: string) => void;
+}) {
+  return (
+    <div className="form-row">
+      <Selection
+        label="Fuel comparison"
+        value={scope}
+        change={scopeChange}
+        options={[
+          { value: 'dual', label: 'Dual fuel' },
+          { value: 'electricity', label: 'Electricity only' },
+          { value: 'gas', label: 'Gas only' },
+        ]}
+      />
+      <Selection
+        label="Data view"
+        value={view}
+        change={viewChange}
+        options={[
+          { value: 'observed', label: 'Observed only' },
+          { value: 'estimated', label: 'Estimated full period', disabled: !hasEstimate },
+        ]}
+      />
+      <Selection
+        label="Renewable alternatives"
+        value={renewable}
+        change={renewableChange}
+        options={[
+          { value: 'all', label: 'All / unknown included' },
+          { value: 'yes', label: 'Yes' },
+          { value: 'no', label: 'No' },
+          { value: 'unknown', label: 'Unknown' },
+        ]}
+      />
+    </div>
+  );
+}
+
+function ReplayNotice({
+  result,
+  estimatedShare,
+}: {
+  result: ReplayResult;
+  estimatedShare?: string;
+}) {
+  const label = result.complete
+    ? 'Complete observed period'
+    : 'Incomplete observed totals — missing energy is excluded';
+  return (
+    <div className="notice">
+      <div>
+        <strong>
+          {estimatedShare === undefined
+            ? label
+            : `Estimated full period · ${estimatedShare}% estimated energy`}
+        </strong>
+        <p>
+          {result.days} local calendar days. Standing charges and prorated credits cover every day.
+          Monthly equivalent is period total divided by the number of months. A 12-month replay is
+          an annual historical cost.
+        </p>
+      </div>
+    </div>
   );
 }

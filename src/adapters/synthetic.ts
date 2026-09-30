@@ -18,6 +18,7 @@ export const syntheticEnergy: EnergyProviderAdapter = {
   async connect(_fields, context) {
     cancelled(context.signal);
     return {
+      providerId: 'synthetic',
       supplies: structuredClone(syntheticSupplies),
       disconnect() {},
       async import(period, context, onBatch) {

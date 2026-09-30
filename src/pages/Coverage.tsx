@@ -75,16 +75,7 @@ export function CoveragePage({ data, update, next }: SessionProps) {
           message={job.busy ? 'Estimating missing consumption…' : ''}
           cancel={job.cancel}
         />
-        {data.estimated && (
-          <div className="notice success">
-            <div>
-              <strong>{data.estimated.estimatedShare}% of energy is estimated</strong>
-              {data.estimated.notes.map((note) => (
-                <p key={note}>{note}</p>
-              ))}
-            </div>
-          </div>
-        )}
+        {data.estimated && <EstimationSummary result={data.estimated} />}
       </section>
       <NextButton onClick={next}>Review optional EV charging</NextButton>
     </>
@@ -147,6 +138,19 @@ function CoverageTable({
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function EstimationSummary({ result }: { result: import('../core/estimate').EstimateResult }) {
+  return (
+    <div className="notice success">
+      <div>
+        <strong>{result.estimatedShare}% of energy is estimated</strong>
+        {result.notes.map((note) => (
+          <p key={note}>{note}</p>
+        ))}
+      </div>
     </div>
   );
 }

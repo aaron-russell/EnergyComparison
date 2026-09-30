@@ -2,7 +2,8 @@ import type { Supply, Reading, Period, Charging } from '../core/types';
 export type Field = {
   key: string;
   label: string;
-  type: 'text' | 'password' | 'select' | 'textarea';
+  type: 'text' | 'password' | 'select' | 'textarea' | 'meters';
+  advanced?: boolean;
   required?: boolean;
   help?: string;
   options?: { value: string; label: string }[];
@@ -33,6 +34,7 @@ export type EnergyCapabilities = {
   currentTariff: boolean;
 };
 export interface EnergyConnection {
+  providerId: string;
   supplies: Supply[];
   import(
     period: Period,

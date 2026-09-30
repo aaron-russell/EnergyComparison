@@ -26,7 +26,10 @@ function attachDate(period: Period, date: string): Period {
   }
   const startDate = Temporal.PlainDate.from(date);
   const endDate = period.end <= period.start ? startDate.add({ days: 1 }) : startDate;
-  return { start: `${startDate}T${period.start}`, end: `${endDate}T${period.end}` };
+  return {
+    start: `${startDate.toString()}T${period.start}`,
+    end: `${endDate.toString()}T${period.end}`,
+  };
 }
 
 export function chargingPeriod(

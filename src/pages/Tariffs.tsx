@@ -40,14 +40,7 @@ export function TariffsPage({ data, update, next }: SessionProps) {
       baselineId: data.baselineId === tariff.id ? '' : data.baselineId,
     });
   };
-  const importFile = async (file: File) => {
-    try {
-      merge(jsonSource.read(await file.text()));
-      setError('');
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Invalid tariff file.');
-    }
-  };
+  const importFile = (file: File) => readTariffFile(file, merge, setError);
   return (
     <>
       <PageHeading eyebrow="05 / TARIFFS" title="Your rates. Your alternatives.">
@@ -183,4 +176,17 @@ function TariffCard({
       </div>
     </article>
   );
+}
+
+async function readTariffFile(
+  file: File,
+  merge: (tariffs: Tariff[]) => void,
+  error: (message: string) => void,
+) {
+  try {
+    merge(jsonSource.read(await file.text()));
+    error('');
+  } catch (failure) {
+    error(failure instanceof Error ? failure.message : 'Invalid tariff file.');
+  }
 }

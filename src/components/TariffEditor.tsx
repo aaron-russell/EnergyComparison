@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Tariff } from '../core/types';
-import { validateTariff } from '../core/tariff';
+import { manualSource } from '../core/tariff';
 import { ErrorNotice } from './Shared';
 import { EVRate, FuelRates, PriceInput } from './TariffRates';
 
@@ -17,7 +17,7 @@ export function TariffEditor({
   const [error, setError] = useState('');
   const submit = () => {
     try {
-      apply(validateTariff(tariff));
+      apply(manualSource.read(tariff)[0]);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : 'Review tariff fields.');
     }

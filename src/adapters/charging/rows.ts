@@ -9,10 +9,7 @@ const normaliseHeader = (header: string) => header.trim().toLowerCase();
 function jsonRows(text: string): ImportRow[] {
   return list(JSON.parse(text)).map((raw) =>
     Object.fromEntries(
-      Object.entries(object(raw)).map(([name, value]) => [
-        normaliseHeader(name),
-        String(value ?? ''),
-      ]),
+      Object.entries(object(raw)).map(([name, value]) => [normaliseHeader(name), cellText(value)]),
     ),
   );
 }
@@ -53,4 +50,14 @@ export function columnReader(row: ImportRow, mapping: Map<string, string>): Colu
     }
     return '';
   };
+}
+
+function cellText(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  throw new Error('Charging JSON cells must be scalar values.');
 }

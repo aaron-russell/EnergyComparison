@@ -96,7 +96,7 @@ export function estimate(
   if (observed.some((reading) => reading.status !== 'measured')) {
     throw new Error('Estimation requires unchanged observed readings.');
   }
-  validateBills(bills, supplies);
+  validateBills(bills, supplies, period);
   const expectedSlots = slots(period);
   const expectedMonths = groupBy(expectedSlots, (slot) => localMonth(slot.start));
   const observedSupplies = groupBy(observed, (reading) => reading.supplyRef);

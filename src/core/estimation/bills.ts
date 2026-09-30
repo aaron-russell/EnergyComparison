@@ -1,9 +1,11 @@
+import { Temporal } from '@js-temporal/polyfill';
+import { midnight, ms } from '../time';
 import Decimal, { isNonNegativeDecimal, sum } from '../decimal';
-import type { Reading, Supply } from '../types';
+import type { Period, Reading, Supply } from '../types';
 
 export type BillTotal = { supplyRef: string; month: string; kWh: string };
 
-export function validateBills(bills: BillTotal[], supplies: Supply[]): void {
+export function validateBills(bills: BillTotal[], supplies: Supply[], period: Period): void {
   const keys = bills.map((bill) => `${bill.supplyRef}|${bill.month}`);
   if (new Set(keys).size !== keys.length) {
     throw new Error('Enter one bill total per supply and month.');
@@ -13,6 +15,7 @@ export function validateBills(bills: BillTotal[], supplies: Supply[]): void {
     if (!knownSupply || !isNonNegativeDecimal(bill.kWh) || !/^\d{4}-\d{2}$/.test(bill.month)) {
       throw new Error('Invalid bill total.');
     }
+    assertFullBillMonth(bill.month, period);
   }
 }
 
@@ -46,4 +49,15 @@ export function distributeRemainder(weights: Decimal[], remainder: Decimal): Dec
     allocated = allocated.add(energy);
     return energy;
   });
+}
+
+function assertFullBillMonth(month: string, period: Period): void {
+  const first = Temporal.PlainDate.from(`${month}-01`);
+  const start = midnight(first.toString());
+  const end = midnight(first.add({ months: 1 }).toString());
+  if (ms(start) < ms(period.start) || ms(end) > ms(period.end)) {
+    throw new Error(
+      'Monthly bill totals require the complete bill month inside the replay period.',
+    );
+  }
 }

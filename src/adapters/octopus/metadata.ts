@@ -33,15 +33,17 @@ export const octopusMetadata: Omit<EnergyProviderAdapter, 'connect'> = {
     },
     {
       key: 'calorific',
+      advanced: true,
       label: 'Calorific value for gas (default 39.2)',
       type: 'text',
       help: 'm³ conversion is approximate; use the calorific value from your bill.',
     },
     {
       key: 'manual',
-      label: 'Manual import meters (optional JSON)',
-      type: 'textarea',
-      help: 'Array of {"fuel":"electricity","point":"MPAN","serial":"meter serial","group":"home"}. Add all replacement meters with the same group. Import meters only; never enter export meters.',
+      advanced: true,
+      label: 'Manual import meters (optional)',
+      type: 'meters',
+      help: 'Use this if account discovery is unavailable. Never enter export meters.',
     },
   ],
   capabilities: {

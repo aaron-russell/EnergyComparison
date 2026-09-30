@@ -34,6 +34,7 @@ export const octopus: EnergyProviderAdapter = {
     const { meters, supplies } = createMeterCatalogue(points, credentials);
     validateDiscoveredSupplies(supplies, credentials);
     return {
+      providerId: octopusMetadata.id,
       supplies,
       disconnect() {
         credentials = {};

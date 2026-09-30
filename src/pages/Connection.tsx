@@ -1,3 +1,4 @@
+import { Selection } from '../components/Selection';
 import { useState } from 'react';
 import { Cable, FlaskConical } from 'lucide-react';
 import { energyProviders } from '../adapters/registries';
@@ -18,7 +19,7 @@ type Props = {
   next: () => void;
 };
 export function ConnectionPage({ connection, connected, next }: Props) {
-  const [providerId, setProviderId] = useState(energyProviders[0].id);
+  const [providerId, setProviderId] = useState(connection?.providerId ?? energyProviders[0].id);
   const [values, setValues] = useState<Fields>({});
   const operation = useOperation();
   const provider = energyProviders.find((item) => item.id === providerId)!;
@@ -53,23 +54,19 @@ export function ConnectionPage({ connection, connected, next }: Props) {
               void connect();
             }}
           >
-            <label className="field">
-              <span>Energy provider</span>
-              <select
-                value={providerId}
-                disabled={operation.busy || !!connection}
-                onChange={(event) => {
-                  setProviderId(event.target.value);
-                  setValues({});
-                }}
-              >
-                {energyProviders.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Selection
+              label="Energy provider"
+              value={providerId}
+              disabled={operation.busy || !!connection}
+              options={energyProviders.map((provider) => ({
+                value: provider.id,
+                label: provider.name,
+              }))}
+              change={(value) => {
+                setProviderId(value);
+                setValues({});
+              }}
+            />
             <p className="muted">{provider.description}</p>
             <FieldsForm
               fields={provider.fields}
@@ -101,7 +98,7 @@ export function ConnectionPage({ connection, connected, next }: Props) {
 
 function ConnectionExplainer({ history }: { history: string }) {
   return (
-    <aside className="panel accent-panel">
+    <aside className="panel accent-panel" aria-label="About historical replay">
       <div className="icon-tile">
         <FlaskConical />
       </div>

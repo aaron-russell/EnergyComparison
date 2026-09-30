@@ -1,11 +1,23 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Shell } from './components/Shell';
-import { ConnectionPage } from './pages/Connection';
-import { ImportPage } from './pages/Import';
-import { CoveragePage } from './pages/Coverage';
-import { ChargingPage } from './pages/Charging';
-import { TariffsPage } from './pages/Tariffs';
-import { ComparePage } from './pages/Compare';
+const ConnectionPage = lazy(() =>
+  import('./pages/Connection').then((module) => ({ default: module.ConnectionPage })),
+);
+const ImportPage = lazy(() =>
+  import('./pages/Import').then((module) => ({ default: module.ImportPage })),
+);
+const CoveragePage = lazy(() =>
+  import('./pages/Coverage').then((module) => ({ default: module.CoveragePage })),
+);
+const ChargingPage = lazy(() =>
+  import('./pages/Charging').then((module) => ({ default: module.ChargingPage })),
+);
+const TariffsPage = lazy(() =>
+  import('./pages/Tariffs').then((module) => ({ default: module.TariffsPage })),
+);
+const ComparePage = lazy(() =>
+  import('./pages/Compare').then((module) => ({ default: module.ComparePage })),
+);
 import { useSession } from './state/use-session';
 
 function initialTheme() {
@@ -47,18 +59,20 @@ export default function App({ reset }: { reset: () => void }) {
         toggleTheme={toggleTheme}
         connected={!!session.connection}
       >
-        {step === 0 && (
-          <ConnectionPage
-            connection={session.connection}
-            connected={session.connected}
-            next={props.next}
-          />
-        )}
-        {step === 1 && <ImportPage {...props} connection={session.connection} />}
-        {step === 2 && <CoveragePage {...props} />}
-        {step === 3 && <ChargingPage {...props} />}
-        {step === 4 && <TariffsPage {...props} />}
-        {step === 5 && <ComparePage {...props} />}
+        <Suspense fallback={<p role="status">Opening replay step…</p>}>
+          {step === 0 && (
+            <ConnectionPage
+              connection={session.connection}
+              connected={session.connected}
+              next={props.next}
+            />
+          )}
+          {step === 1 && <ImportPage {...props} connection={session.connection} />}
+          {step === 2 && <CoveragePage {...props} />}
+          {step === 3 && <ChargingPage {...props} />}
+          {step === 4 && <TariffsPage {...props} />}
+          {step === 5 && <ComparePage {...props} />}
+        </Suspense>
       </Shell>
     </div>
   );

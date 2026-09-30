@@ -23,7 +23,7 @@ export function Shell({ step, navigate, reset, theme, toggleTheme, children, con
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <aside className="sidebar">
+      <aside className="sidebar" aria-label="Replay navigation">
         <a className="brand" href="#main">
           <span className="brand-icon">
             <Zap fill="currentColor" size={23} />

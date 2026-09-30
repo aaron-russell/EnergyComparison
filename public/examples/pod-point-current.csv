@@ -1,0 +1,3 @@
+Date,Start time,End time,Total kWh Consumed,kWh Grid (Home),kWh Solar (Home),Location type
+05/03/2024,01:00,03:00,14,14,0,home
+06/03/2024,15:00,16:00,5,,,public

@@ -1,7 +1,5 @@
-import Ajv from 'ajv';
-import schema from '../../public/tariff.schema.json';
+import check from '../generated/validate-tariff';
 import type { Tariff, Band } from './types';
-const check = new Ajv({ allErrors: true }).compile(schema);
 export const clockIndex = (v: string) => {
   const [h, m] = v.split(':').map(Number);
   return h * 2 + m / 30;
@@ -16,7 +14,7 @@ function bandIndices(band: Band): number[] {
 }
 
 export function schedule(bands: Band[]): Band[] {
-  const week = new Array<Band>(336);
+  const week = Array.from<Band | undefined>({ length: 336 });
   for (const band of bands) {
     for (const index of bandIndices(band)) {
       if (week[index]) {
@@ -28,7 +26,7 @@ export function schedule(bands: Band[]): Band[] {
   if (Array.from({ length: 336 }, (_, index) => week[index]).some((band) => !band)) {
     throw new Error('Electricity schedule has gaps. Cover every half-hour of the week.');
   }
-  return week;
+  return week as Band[];
 }
 
 export function validateTariff(value: unknown): Tariff {

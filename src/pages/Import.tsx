@@ -23,8 +23,9 @@ export function ImportPage({ data, update, next, connection }: Props) {
       }
       const period = { start: midnight(start), end: midnight(end) };
       dates(period);
-      const rows: Reading[] = [];
-      update({ readings: [], charging: [], estimated: null, conflicts: 0, period });
+      const samePeriod = period.start === data.period.start && period.end === data.period.end;
+      const rows: Reading[] = samePeriod ? [...data.readings] : [];
+      update({ readings: rows, charging: [], estimated: null, conflicts: 0, period });
       try {
         const result = await connection.import(period, context, (batch) => rows.push(...batch));
         setFailures(result.failures);
@@ -47,49 +48,16 @@ export function ImportPage({ data, update, next, connection }: Props) {
           <CalendarDays />
           <h2>Your replay period</h2>
         </div>
-        <div className="form-row">
-          <label className="field">
-            Start date (included)
-            <input
-              type="date"
-              value={start}
-              disabled={operation.busy}
-              onChange={(event) => setStart(event.target.value)}
-            />
-          </label>
-          <label className="field">
-            End date (excluded)
-            <input
-              type="date"
-              value={end}
-              disabled={operation.busy}
-              onChange={(event) => setEnd(event.target.value)}
-            />
-          </label>
-        </div>
-        <p className="muted">
-          {start} at 00:00 through {end} at 00:00, Europe/London. Standing charges include every day
-          in this period.
-        </p>
-        <fieldset disabled={operation.busy}>
-          <legend>Import supplies</legend>
-          {connection?.supplies.map((supply) => (
-            <label className="check" key={supply.ref}>
-              <input
-                type="checkbox"
-                checked={selected.includes(supply.ref)}
-                onChange={(event) =>
-                  setSelected(
-                    event.target.checked
-                      ? [...selected, supply.ref]
-                      : selected.filter((ref) => ref !== supply.ref),
-                  )
-                }
-              />
-              {supply.label}
-            </label>
-          ))}
-        </fieldset>
+        <ImportOptions
+          start={start}
+          end={end}
+          setStart={setStart}
+          setEnd={setEnd}
+          selected={selected}
+          setSelected={setSelected}
+          supplies={connection?.supplies ?? []}
+          busy={operation.busy}
+        />
         <ErrorNotice message={operation.error} />
         <button
           className="primary"
@@ -145,5 +113,73 @@ function ImportOutcome({
         </p>
       )}
     </div>
+  );
+}
+
+function ImportOptions({
+  start,
+  end,
+  setStart,
+  setEnd,
+  selected,
+  setSelected,
+  supplies,
+  busy,
+}: {
+  start: string;
+  end: string;
+  setStart: (value: string) => void;
+  setEnd: (value: string) => void;
+  selected: string[];
+  setSelected: (value: string[]) => void;
+  supplies: import('../core/types').Supply[];
+  busy: boolean;
+}) {
+  return (
+    <>
+      <div className="form-row">
+        <label className="field">
+          Start date (included)
+          <input
+            type="date"
+            value={start}
+            disabled={busy}
+            onChange={(event) => setStart(event.target.value)}
+          />
+        </label>
+        <label className="field">
+          End date (excluded)
+          <input
+            type="date"
+            value={end}
+            disabled={busy}
+            onChange={(event) => setEnd(event.target.value)}
+          />
+        </label>
+      </div>
+      <p className="muted">
+        {start} at 00:00 through {end} at 00:00, Europe/London. Standing charges include every day
+        in this period.
+      </p>
+      <fieldset disabled={busy}>
+        <legend>Import supplies</legend>
+        {supplies.map((supply) => (
+          <label className="check" key={supply.ref}>
+            <input
+              type="checkbox"
+              checked={selected.includes(supply.ref)}
+              onChange={(event) =>
+                setSelected(
+                  event.target.checked
+                    ? [...selected, supply.ref]
+                    : selected.filter((ref) => ref !== supply.ref),
+                )
+              }
+            />
+            {supply.label}
+          </label>
+        ))}
+      </fieldset>
+    </>
   );
 }

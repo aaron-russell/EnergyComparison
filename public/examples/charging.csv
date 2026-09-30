@@ -1,0 +1,2 @@
+start,end,kWh,provenance,kind,status
+2024-03-05T01:00:00Z,2024-03-05T03:00:00Z,14,grid,session,measured

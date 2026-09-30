@@ -1,3 +1,4 @@
+import { ManualMeters } from './ManualMeters';
 import type { Field, Fields } from '../adapters/contracts';
 
 type Props = {
@@ -7,17 +8,24 @@ type Props = {
   disabled?: boolean;
 };
 export function FieldsForm({ fields, values, change, disabled }: Props) {
+  const render = (field: Field) => (
+    <ConnectionField
+      key={field.key}
+      field={field}
+      value={values[field.key] ?? ''}
+      change={(value) => change({ ...values, [field.key]: value })}
+      disabled={disabled}
+    />
+  );
   return (
     <div className="fields">
-      {fields.map((field) => (
-        <ConnectionField
-          key={field.key}
-          field={field}
-          value={values[field.key] ?? ''}
-          change={(value) => change({ ...values, [field.key]: value })}
-          disabled={disabled}
-        />
-      ))}
+      {fields.filter((field) => !field.advanced).map(render)}
+      {fields.some((field) => field.advanced) && (
+        <details>
+          <summary>Advanced connection options</summary>
+          {fields.filter((field) => field.advanced).map(render)}
+        </details>
+      )}
     </div>
   );
 }
@@ -45,6 +53,15 @@ function ConnectionField({
     ) => change(event.target.value),
   };
   let control;
+  if (field.type === 'meters') {
+    return (
+      <fieldset>
+        <legend>{field.label}</legend>
+        <ManualMeters value={value} change={change} disabled={disabled} />
+        <small>{field.help}</small>
+      </fieldset>
+    );
+  }
   if (field.type === 'textarea') {
     control = <textarea {...props} rows={3} autoComplete="off" spellCheck={false} />;
   } else if (field.type === 'select') {
@@ -61,10 +78,10 @@ function ConnectionField({
     control = <input {...props} type={field.type} autoComplete="off" spellCheck={false} />;
   }
   return (
-    <label className="field" htmlFor={field.key}>
-      <span>{field.label}</span>
+    <div className="field">
+      <label htmlFor={field.key}>{field.label}</label>
       {control}
       <small id={`${field.key}-help`}>{field.help}</small>
-    </label>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 # Contributing
 
-Use Node.js 22 and npm. Install with `npm ci` and start the app with `npm run dev`.
+Use Node.js 24 and npm. Install with `npm ci` and start the app with `npm run dev`.
 
 ## Code quality
 

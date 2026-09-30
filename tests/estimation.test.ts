@@ -96,3 +96,10 @@ describe('estimation boundaries', () => {
     );
   });
 });
+
+it('rejects whole-month bill totals applied to partial replay months', () => {
+  const partial = { start: midnight('2024-03-15'), end: midnight('2024-04-01') };
+  expect(() =>
+    estimate([], [supply], partial, [{ supplyRef: 'home', month: '2024-03', kWh: '100' }], true),
+  ).toThrow('complete bill month');
+});
