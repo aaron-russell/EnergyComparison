@@ -56,7 +56,7 @@ npm run test:e2e
 npm run check
 ```
 
-ESLint enforces complexity <= 10, nesting <= 3, and <= 80 nonblank/noncomment lines per source
+oxlint enforces complexity <= 10, nesting <= 3, and <= 80 nonblank/noncomment lines per source
 function. Prettier owns formatting. CI also runs Playwright using synthetic data. Tariff schema
 validators are generated at build time, so runtime validation works without `unsafe-eval`.
 Generated validator code is exempt from hand-authored-code style/complexity rules.

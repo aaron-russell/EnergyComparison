@@ -36,7 +36,7 @@ Neither module knows supplier-specific response fields.
 
 ## Enforced limits
 
-ESLint checks all production source functions:
+oxlint checks all production source functions:
 
 - Cyclomatic complexity: maximum 10.
 - Block nesting: maximum 3 levels.
@@ -49,7 +49,7 @@ clear common responsibility. Avoid splitting straightforward expressions just to
 
 The initial complexity review found maximum complexity 36 in estimation, 24 in charging-file
 parsing and 22 in replay. Following extraction, the maximum across source functions is 9. These
-numbers describe the refactor checkpoint; ESLint is the ongoing enforcement mechanism.
+numbers describe the refactor checkpoint; oxlint is the ongoing enforcement mechanism.
 
 Regression tests cover replay boundaries, monthly rounding, DST profiles, bill conservation,
 unchanged observations, charging provenance and limits, parsing variants, replacement meters,

@@ -6,7 +6,7 @@ Use Node.js 24 and npm. Install with `npm ci` and start the app with `npm run de
 
 - `npm run format` applies Prettier to source, configuration and documentation.
 - `npm run format:check` checks formatting without changing files.
-- `npm run lint` runs ESLint for TypeScript and React, including Hooks rules.
+- `npm run lint` runs oxlint (type-aware) for TypeScript and React, including Hooks rules.
 - `npm run lint:fix` applies safe automatic lint fixes.
 - `npm run check` runs formatting, linting, type checking, unit tests and a production build.
 - `npm run test:e2e` runs browser workflows separately.
@@ -19,8 +19,8 @@ Use synthetic fixtures only. Never commit API keys, account details, meter ident
 identifiers or real consumption. New adapters need contract tests and registration in the relevant
 registry; the calculation engine must remain independent of providers.
 
-Prettier owns formatting. ESLint catches correctness and maintainability problems; conflicting
-formatting rules are disabled with `eslint-config-prettier`. Editor settings are in `.editorconfig`.
+Prettier owns formatting. oxlint catches correctness and maintainability problems; its rules do
+not overlap with Prettier's formatting. Editor settings are in `.editorconfig`.
 
 ## Keep functions focused
 
