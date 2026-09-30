@@ -1,0 +1,49 @@
+import Decimal, { isNonNegativeDecimal, sum } from '../decimal';
+import type { Reading, Supply } from '../types';
+
+export type BillTotal = { supplyRef: string; month: string; kWh: string };
+
+export function validateBills(bills: BillTotal[], supplies: Supply[]): void {
+  const keys = bills.map((bill) => `${bill.supplyRef}|${bill.month}`);
+  if (new Set(keys).size !== keys.length) {
+    throw new Error('Enter one bill total per supply and month.');
+  }
+  for (const bill of bills) {
+    const knownSupply = supplies.some((supply) => supply.ref === bill.supplyRef);
+    if (!knownSupply || !isNonNegativeDecimal(bill.kWh) || !/^\d{4}-\d{2}$/.test(bill.month)) {
+      throw new Error('Invalid bill total.');
+    }
+  }
+}
+
+export function billRemainder(
+  bill: BillTotal | undefined,
+  observed: Reading[],
+  missingCount: number,
+): Decimal | undefined {
+  if (!bill) {
+    return undefined;
+  }
+  const remainder = new Decimal(bill.kWh).sub(sum(observed.map((reading) => reading.kWh)));
+  if (remainder.isNegative()) {
+    throw new Error(`${bill.month}: bill total is below observed consumption.`);
+  }
+  if (!missingCount && !remainder.isZero()) {
+    throw new Error(`${bill.month}: full coverage cannot absorb a different bill total.`);
+  }
+  return remainder;
+}
+
+/** Put division residue in the final interval so the bill's remainder is conserved. */
+export function distributeRemainder(weights: Decimal[], remainder: Decimal): Decimal[] {
+  const totalWeight = sum(weights);
+  let allocated = new Decimal(0);
+  return weights.map((weight, index) => {
+    if (index === weights.length - 1) {
+      return remainder.sub(allocated);
+    }
+    const energy = totalWeight.isZero() ? new Decimal(0) : remainder.mul(weight).div(totalWeight);
+    allocated = allocated.add(energy);
+    return energy;
+  });
+}
