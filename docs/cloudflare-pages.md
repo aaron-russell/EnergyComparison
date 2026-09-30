@@ -30,8 +30,9 @@ The repository workflow at `.github/workflows/deploy.yml` builds and deploys the
 `cloudflare/wrangler-action` when changes land on `main`, and creates a `pr-<number>` preview branch
 for pull requests from this repository. The preview job updates a single pull request comment with
 the stable preview alias and immutable deployment URL. Passing `GITHUB_TOKEN` also creates GitHub
-Deployment records for both production and preview deployments. Pull requests from forks are skipped
-because Cloudflare deployment secrets are not exposed to fork workflows.
+Deployment records for both production and preview deployments. Pull requests from forks and
+Dependabot are skipped because their workflows do not have the required Cloudflare secrets and write
+permissions.
 
 The workflow grants `issues: write` so the preview step can create or update the pull request comment;
 GitHub models pull request conversation comments through its Issues API.
