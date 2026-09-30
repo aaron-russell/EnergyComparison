@@ -41,7 +41,7 @@ export function billRemainder(
 export function distributeRemainder(weights: Decimal[], remainder: Decimal): Decimal[] {
   const totalWeight = sum(weights);
   let allocated = new Decimal(0);
-  return weights.map((weight, index) => {
+  const result = weights.map((weight, index) => {
     if (index === weights.length - 1) {
       return remainder.sub(allocated);
     }
@@ -49,6 +49,15 @@ export function distributeRemainder(weights: Decimal[], remainder: Decimal): Dec
     allocated = allocated.add(energy);
     return energy;
   });
+
+  // Decimal arithmetic can round the sum of the independently calculated values by one
+  // precision unit. Apply that tiny correction to the final interval as well, so conservation
+  // holds for the returned values when they are summed again.
+  if (result.length > 0) {
+    const last = result.length - 1;
+    result[last] = result[last].add(remainder.sub(sum(result)));
+  }
+  return result;
 }
 
 function assertFullBillMonth(month: string, period: Period): void {

@@ -4,6 +4,18 @@ A private React + TypeScript tool for replaying UK household consumption against
 energy tariffs. Built with Vite and npm for Cloudflare Pages, with an alternative Workers Static
 Assets configuration. Historical replay is **not a prediction or guarantee of future savings**.
 
+## What it does
+
+Energy Replay replays measured UK electricity and gas consumption against tariff definitions you
+enter yourself. It keeps the provider layer separate from the calculation engine, so the same
+readings can be compared against a current baseline and multiple alternatives. Results include
+period totals plus monthly, component and electricity-band breakdowns.
+
+The app runs in the browser. Imported readings, credentials, connections and charging data stay
+in the active session; only explicitly saved tariff definitions and the dark/light theme are
+stored locally. Tariff exports contain tariff definitions only, never consumption, account or
+meter data.
+
 ## Run locally
 
 Use Node.js 24:
@@ -13,7 +25,8 @@ npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. To inspect production security headers, use:
+Open the local URL printed by Vite. The default theme is dark; use the theme control to switch to
+light mode. To inspect the production build and security headers, use:
 
 ```sh
 npm run build
@@ -37,6 +50,11 @@ Energy providers and charging integrations are independent. Included energy adap
 and a synthetic example. Charging adapters include generic CSV/JSON, documented Pod Point report
 variants, optional account-dependent SmartFlex history, and a synthetic API charger.
 
+Charging file imports support the generic schema documented in [Adapters and extension
+checklist](docs/adapters.md), as well as the recognised legacy and current Pod Point report
+variants. Tariffs can be entered in the editor or imported/exported as validated JSON using the
+[tariff schema](public/tariff.schema.json).
+
 SmartFlex uses a user-supplied authorised GraphQL token and account number. Tokens are kept in
 memory. Missing permissions/devices are an explicit unsupported state; no server-side proxy is
 introduced. Provider browser access and real-account compatibility require the live release
@@ -45,18 +63,18 @@ checks below.
 ## Quality checks
 
 ```sh
-npm run format
+npm run format:check
 npm run lint
 npm run typecheck
 npm test
 npm run build
 npx playwright install chromium
 npm run test:e2e
-# All formatting, lint, type, unit and build checks:
+# Formatting, lint, type, unit and build checks:
 npm run check
 ```
 
-ESLint enforces complexity <= 10, nesting <= 3, and <= 80 nonblank/noncomment lines per source
+oxlint enforces complexity <= 10, nesting <= 3, and <= 80 nonblank/noncomment lines per source
 function. Prettier owns formatting. CI also runs Playwright using synthetic data. Tariff schema
 validators are generated at build time, so runtime validation works without `unsafe-eval`.
 Generated validator code is exempt from hand-authored-code style/complexity rules.
