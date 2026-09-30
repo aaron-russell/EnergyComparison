@@ -117,10 +117,12 @@ test('manual baseline editing, duplication, validation and persistence', async (
 
 test('accessibility, keyboard focus and responsive layouts in both themes', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByText('Skip to content')).toBeFocused();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole('button', { name: 'Switch to light mode' }).click();
+  await page.waitForTimeout(200);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
