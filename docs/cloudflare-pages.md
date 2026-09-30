@@ -24,6 +24,20 @@ Use an existing intended project name instead of creating a duplicate if already
 For CI, provide a narrowly scoped `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` through the
 CI secret store. These are deployment credentials, never browser build variables.
 
+## GitHub Actions with Wrangler
+
+The repository workflow at `.github/workflows/deploy.yml` builds and deploys the Pages project with
+`cloudflare/wrangler-action` when changes land on `main`. It can also be started manually with the
+`workflow_dispatch` action in GitHub. Add these repository or environment secrets before enabling
+the workflow:
+
+- `CLOUDFLARE_API_TOKEN`: a narrowly scoped token with Pages project edit permission.
+- `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account that owns the Pages project.
+
+The workflow uses the Pages project name `energy-replay`, uploads the Vite `dist` directory, and
+creates a GitHub deployment record. Keep the build and deployment branch protected by requiring the
+existing quality-check workflow before merging.
+
 The default `wrangler.jsonc` is Pages configuration. Static security headers are copied from
 `public/_headers`. The app has a single URL and in-memory step navigation. Cloudflare's SPA
 fallback serves the same entry document. No third-party font or image origin is required.
