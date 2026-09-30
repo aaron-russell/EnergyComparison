@@ -19,7 +19,13 @@ export function prepareReplay(
     throw new Error('Create an estimated view before selecting it.');
   }
   const references = new Set(supplies.map((supply) => supply.ref));
-  const tariffs = data.tariffs.filter(
+  const compatible = data.tariffs.filter((tariff) =>
+    supplies.every((supply) => tariff[supply.fuel]),
+  );
+  if (!compatible.some((tariff) => tariff.id === data.baselineId)) {
+    throw new Error('The baseline tariff does not include prices for the selected fuels.');
+  }
+  const tariffs = compatible.filter(
     (tariff) =>
       tariff.id === data.baselineId || renewable === 'all' || tariff.renewable === renewable,
   );

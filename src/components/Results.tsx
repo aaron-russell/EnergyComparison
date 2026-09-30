@@ -96,7 +96,10 @@ function AnnualSummary({
   );
 }
 function formatKwh(value: string): string {
-  return new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 }).format(Number(value));
+  return new Decimal(value)
+    .toDecimalPlaces(0)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 function MonthlyChart({ results }: { results: ReplayResult[] }) {
   const shown = results.slice(0, 2);
