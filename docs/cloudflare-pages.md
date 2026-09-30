@@ -28,8 +28,9 @@ CI secret store. These are deployment credentials, never browser build variables
 
 The repository workflow at `.github/workflows/deploy.yml` builds and deploys the Pages project with
 `cloudflare/wrangler-action` when changes land on `main`. It can also be started manually with the
-`workflow_dispatch` action in GitHub. Add these repository or environment secrets before enabling
-the workflow:
+`workflow_dispatch` action in GitHub. This workflow is the deployment path for this project: disable
+Cloudflare Pages' automatic Git deployment for the project before enabling it, or every push to
+`main` will create duplicate deployments. Add these repository secrets before enabling the workflow:
 
 - `CLOUDFLARE_API_TOKEN`: a narrowly scoped token with Pages project edit permission.
 - `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account that owns the Pages project.

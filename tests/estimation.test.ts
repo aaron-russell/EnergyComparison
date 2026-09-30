@@ -79,6 +79,11 @@ describe('estimation boundaries', () => {
     expect(sum(autumn.map((slot) => profile.meanFor(slot)!)).toFixed(8)).toBe('4.80000000');
     expect(autumn.filter((slot) => local(slot.start).hour === 1)).toHaveLength(4);
   });
+  it('conserves remainders after decimal rounding', () => {
+    const remainder = new Decimal(34770).div(1000);
+    const allocated = distributeRemainder([new Decimal(8), new Decimal(75)], remainder);
+    expect(sum(allocated).eq(remainder)).toBe(true);
+  });
   it('conserves decimal remainders for arbitrary weights', () => {
     fc.assert(
       fc.property(
