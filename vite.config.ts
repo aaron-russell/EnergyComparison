@@ -13,5 +13,18 @@ const headers = Object.fromEntries(
 export default defineConfig({
   preview: { headers },
   plugins: [react()],
-  test: { include: ['tests/**/*.test.ts'] },
+  test: {
+    include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      exclude: ['src/generated/**'],
+      thresholds: {
+        statements: 90,
+        branches: 77,
+        functions: 95,
+        lines: 90,
+      },
+    },
+  },
 });
