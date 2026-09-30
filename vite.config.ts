@@ -13,5 +13,32 @@ const headers = Object.fromEntries(
 export default defineConfig({
   preview: { headers },
   plugins: [react()],
-  test: { include: ['tests/**/*.test.ts'] },
+  test: {
+    include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      exclude: [
+        'coverage/**',
+        'dist/**',
+        '**/node_modules/**',
+        '**/[.]**/**',
+        '**/*.d.ts',
+        '**/test{,s}/**',
+        '**/*{.,-}{test,spec,bench,benchmark}.*',
+        '**/__tests__/**',
+        '**/{karma,rollup,webpack,vite,vitest,jest,ava,nyc,eslint,prettier}.config.*',
+        '**/vitest.workspace.*',
+        '**/.{eslint,mocha,prettier}rc.{js,cjs,mjs,ts}',
+        'src/generated/**',
+      ],
+      thresholds: {
+        statements: 50,
+        branches: 50,
+        functions: 40,
+        lines: 50,
+      },
+    },
+  },
 });
