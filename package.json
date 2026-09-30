@@ -8,7 +8,11 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build:app": "tsc -b && vite build",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs --outDir dist/docs",
+    "docs:check": "npm run docs:build && node scripts/check-docs.mjs",
+    "build": "npm run build:app && npm run docs:build",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -18,7 +22,7 @@
     "lint:fix": "oxlint . --type-aware --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node scripts/check-docs.mjs",
     "schema:generate": "node scripts/generate-validator.mjs",
     "prebuild": "npm run schema:generate"
   },
@@ -45,6 +49,7 @@
     "prettier": "^3.9.9",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",
+    "vitepress": "^1.6.4",
     "vitest": "^5.0.3",
     "wrangler": "^4.145.0"
   }

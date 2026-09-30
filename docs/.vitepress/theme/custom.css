@@ -1,0 +1,12 @@
+.VPNavBarTitle .title {
+  font-weight: 700;
+}
+
+.vp-doc h2 {
+  margin-top: 2.5rem;
+}
+
+.vp-doc table {
+  display: table;
+  width: 100%;
+}

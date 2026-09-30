@@ -1,0 +1,11 @@
+# Privacy and security
+
+Imported readings, credentials, account connections, and charging records remain in the active browser
+session. Only explicitly saved tariff definitions and theme preference persist locally. Tariff exports
+contain definitions only. There is no analytics, service worker, remote font, sensitive logging, or
+server-side credential proxy in the application.
+
+Provider adapters must use opaque references, clear credentials on disconnect, omit cookies, validate
+pagination origins, bound retries, and sanitize errors. Never commit real account data, credentials,
+meter serials, device IDs, or real consumption. See the repository [security notes](https://github.com/aaron-russell/EnergyComparison/blob/main/SECURITY.md)
+for reporting guidance.

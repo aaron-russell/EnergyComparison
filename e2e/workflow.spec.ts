@@ -4,6 +4,19 @@ import { exampleTariffs, syntheticReadings, syntheticSupplies } from '../src/fix
 import { replay } from '../src/core/engine';
 import { midnight } from '../src/core/time';
 
+test('combined production build serves the app and handbook', async ({ page }) => {
+  await page.goto('/docs/');
+  await expect(page.getByRole('heading', { name: 'Energy Replay' }).first()).toBeVisible();
+  await expect(page.locator('a[href="/docs/guide/using-the-app"]').first()).toBeVisible();
+  const nested = await page.request.get('/docs/guide/adding-an-ev-charger');
+  expect(nested.ok()).toBe(true);
+  expect(await nested.text()).toContain('Add an EV charger');
+  const asset = await page.request.get('/docs/logo.svg');
+  expect(asset.ok()).toBe(true);
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});
+
 async function syntheticImport(page: Page) {
   await page.goto('/');
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
