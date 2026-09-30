@@ -6,38 +6,10 @@ type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string };
 
 export function ReplayResults({ results, tariffs, baselineId }: Props) {
   const baseline = results.find((result) => result.tariffId === baselineId)!;
-  const annual = results[0].months.length === 12 && results[0].days >= 365;
+  const annual = results[0].complete && results[0].months.length === 12 && results[0].days >= 365;
   return (
     <div className="results">
-      <section className="panel annual-summary">
-        <div>
-          <span className="badge">{annual ? '12-MONTH VIEW' : 'SELECTED PERIOD'}</span>
-          <h2>{annual ? 'Annual usage and monthly cost' : 'Usage and cost for this period'}</h2>
-          <p className="muted">Every tariff is priced against the same household energy usage.</p>
-        </div>
-        <div className="annual-metrics">
-          <div>
-            <span>Electricity usage</span>
-            <strong>
-              {formatKwh(results[0].energy.electricity)} kWh{annual ? '/yr' : ''}
-            </strong>
-          </div>
-          <div>
-            <span>Gas usage</span>
-            <strong>
-              {formatKwh(results[0].energy.gas)} kWh{annual ? '/yr' : ''}
-            </strong>
-          </div>
-          <div>
-            <span>{annual ? 'Baseline annual cost' : 'Baseline period cost'}</span>
-            <strong>{money(baseline.total)}</strong>
-          </div>
-          <div>
-            <span>{annual ? 'Baseline monthly cost' : 'Baseline monthly equivalent'}</span>
-            <strong>{money(baseline.monthlyEquivalent)}</strong>
-          </div>
-        </div>
-      </section>
+      <AnnualSummary result={results[0]} baseline={baseline} annual={annual} />
       <section className="panel">
         <h2>{annual ? 'Annual tariff comparison' : 'Historical replay costs'}</h2>
         <div className="table-scroll">
@@ -79,6 +51,48 @@ export function ReplayResults({ results, tariffs, baselineId }: Props) {
         />
       ))}
     </div>
+  );
+}
+function AnnualSummary({
+  result,
+  baseline,
+  annual,
+}: {
+  result: ReplayResult;
+  baseline: ReplayResult;
+  annual: boolean;
+}) {
+  const period = annual ? '/yr' : '';
+  return (
+    <section className="panel annual-summary">
+      <div>
+        <span className="badge">{annual ? '12-MONTH VIEW' : 'SELECTED PERIOD'}</span>
+        <h2>{annual ? 'Annual usage and monthly cost' : 'Usage and cost for this period'}</h2>
+        <p className="muted">Every tariff is priced against the same household energy usage.</p>
+      </div>
+      <div className="annual-metrics">
+        <div>
+          <span>Electricity usage</span>
+          <strong>
+            {formatKwh(result.energy.electricity)} kWh{period}
+          </strong>
+        </div>
+        <div>
+          <span>Gas usage</span>
+          <strong>
+            {formatKwh(result.energy.gas)} kWh{period}
+          </strong>
+        </div>
+        <div>
+          <span>{annual ? 'Baseline annual cost' : 'Baseline period cost'}</span>
+          <strong>{money(baseline.total)}</strong>
+        </div>
+        <div>
+          <span>{annual ? 'Baseline monthly cost' : 'Baseline monthly equivalent'}</span>
+          <strong>{money(baseline.monthlyEquivalent)}</strong>
+        </div>
+      </div>
+    </section>
   );
 }
 function formatKwh(value: string): string {

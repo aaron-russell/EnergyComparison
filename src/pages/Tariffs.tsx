@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Save, Copy, Trash2 } from 'lucide-react';
 import type { Tariff } from '../core/types';
 import { blankTariff, jsonSource } from '../core/tariff';
@@ -138,29 +138,37 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sourceNote, setSourceNote] = useState('');
+  const startRequest = useAbortableRequest();
   const load = async () => {
+    const requestController = startRequest();
     setLoading(true);
     setError('');
+    setSourceNote('');
     try {
-      const resolvedRegion = postcode.trim() ? await lookupRegion(postcode) : region;
-      if (!resolvedRegion) {
-        throw new Error('Enter a postcode or an electricity region.');
-      }
-      setRegion(resolvedRegion);
-      const result = await fetchTariffs(resolvedRegion);
-      if (!result.tariffs.length) {
-        throw new Error('No open tariffs were returned for this region.');
-      }
-      merge(result.tariffs);
-      setSourceNote(
-        `Loaded ${result.tariffs.length} tariffs for ${resolvedRegion}${result.asOf ? ` · prices checked ${result.asOf.slice(0, 10)}` : ''}.`,
+      const { resolvedRegion, tariffs, asOf } = await requestTariffs(
+        postcode,
+        region,
+        requestController.signal,
       );
+      if (!requestController.signal.aborted) {
+        setRegion(resolvedRegion);
+        merge(tariffs);
+      }
+      if (!requestController.signal.aborted) {
+        setSourceNote(
+          `Loaded ${tariffs.length} tariffs for ${resolvedRegion}${asOf ? ` · prices checked ${asOf.slice(0, 10)}` : ''}.`,
+        );
+      }
     } catch (failure) {
-      setError(
-        failure instanceof Error ? failure.message : 'Could not load Tariff Tracker tariffs.',
-      );
+      if (!requestController.signal.aborted) {
+        setError(
+          failure instanceof Error ? failure.message : 'Could not load Tariff Tracker tariffs.',
+        );
+      }
     } finally {
-      setLoading(false);
+      if (!requestController.signal.aborted) {
+        setLoading(false);
+      }
     }
   };
   return (
@@ -203,6 +211,29 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
       </small>
     </div>
   );
+}
+
+function useAbortableRequest() {
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  return () => {
+    controller.current?.abort();
+    const next = new AbortController();
+    controller.current = next;
+    return next;
+  };
+}
+
+async function requestTariffs(postcode: string, region: string, signal: AbortSignal) {
+  const resolvedRegion = postcode.trim() ? await lookupRegion(postcode, signal) : region;
+  if (!resolvedRegion) {
+    throw new Error('Enter a postcode or an electricity region.');
+  }
+  const result = await fetchTariffs(resolvedRegion, signal);
+  if (!result.tariffs.length) {
+    throw new Error('No open tariffs were returned for this region.');
+  }
+  return { resolvedRegion, ...result };
 }
 function TariffCard({
   tariff,

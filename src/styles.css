@@ -303,7 +303,9 @@ main {
   font-size: 18px;
 }
 @media (max-width: 900px) {
-  .annual-summary,
+  .annual-summary {
+    grid-template-columns: 1fr;
+  }
   .annual-metrics {
     grid-template-columns: 1fr 1fr;
   }
