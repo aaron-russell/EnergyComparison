@@ -56,7 +56,7 @@ export function Shell({ step, navigate, reset, theme, toggleTheme, children, con
             <br />
             Under your control.
           </p>
-          <span className="badge">NO ANALYTICS · NO TRACKING</span>
+          <span className="badge">PRIVACY FIRST</span>
         </div>
       </aside>
       <div className="workspace">
