@@ -22,6 +22,7 @@ import {
   PrivacyNote,
 } from '../src/components/Shared';
 import { exampleTariffs, syntheticReadings, syntheticSupplies } from '../src/fixtures/synthetic';
+import { syntheticEnergy } from '../src/adapters/synthetic';
 import { midnight } from '../src/core/time';
 import { replay } from '../src/core/engine';
 import type { Charging, Period, Reading, ReplayResult } from '../src/core/types';
@@ -77,11 +78,11 @@ class TestWorker {
   static last: TestWorker | null = null;
   onmessage: ((event: MessageEvent) => void) | null = null;
   onerror: (() => void) | null = null;
+  terminate = vi.fn();
   constructor() {
     TestWorker.last = this;
   }
   postMessage() {}
-  terminate() {}
 }
 
 beforeEach(() => {
@@ -245,15 +246,30 @@ describe('shared components and forms', () => {
 });
 
 describe('page journeys', () => {
-  it('connects a provider and handles an aborted result', async () => {
+  it('disconnects a provider result that arrives after the connection was aborted', async () => {
     const connected = vi.fn();
+    const disconnect = vi.fn();
+    let signal: AbortSignal | undefined;
+    let resolveConnection!: (value: EnergyConnection) => void;
+    const pending = new Promise<EnergyConnection>((resolve) => {
+      resolveConnection = resolve;
+    });
+    vi.spyOn(syntheticEnergy, 'connect').mockImplementation((_values, context) => {
+      signal = context.signal;
+      return pending;
+    });
     render(<ConnectionPage connection={null} connected={connected} next={vi.fn()} />);
     fireEvent.change(screen.getByLabelText('Energy provider'), { target: { value: 'synthetic' } });
     fireEvent.click(screen.getByRole('button', { name: 'Connect provider' }));
-    await waitFor(() => expect(connected).toHaveBeenCalled());
+    expect(signal).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(signal?.aborted).toBe(true);
+    resolveConnection({ ...connection, disconnect });
+    await waitFor(() => expect(disconnect).toHaveBeenCalled());
+    expect(connected).not.toHaveBeenCalled();
   });
 
-  it('renders import options, validates missing connections, and imports readings', async () => {
+  it('renders import options and imports readings', async () => {
     const update = vi.fn();
     const next = vi.fn();
     render(
@@ -268,6 +284,18 @@ describe('page journeys', () => {
     await waitFor(() => expect(update).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'Review coverage' }));
     expect(next).toHaveBeenCalled();
+  });
+
+  it('disables importing when no connection is available', () => {
+    render(
+      <ImportPage
+        {...props({ supplies: syntheticSupplies })}
+        update={vi.fn()}
+        next={vi.fn()}
+        connection={null}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Import history / retry' })).toBeDisabled();
   });
 
   it('renders coverage, edits a bill, toggles uniform allocation and continues', () => {
@@ -335,7 +363,7 @@ describe('page journeys', () => {
     expect(screen.getByRole('button', { name: 'Replay these tariffs' })).toBeDisabled();
   });
 
-  it('runs a replay, renders results, and cancels when controls change', async () => {
+  it('runs a replay and renders results', async () => {
     const result = replay(
       exampleTariffs[0],
       syntheticReadings(period),
@@ -349,9 +377,17 @@ describe('page journeys', () => {
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible(),
     );
+  });
+
+  it('terminates an active replay worker when controls change', async () => {
+    render(<ComparePage {...props()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Replay these tariffs' }));
+    await waitFor(() => expect(TestWorker.last).not.toBeNull());
+    const worker = TestWorker.last!;
     fireEvent.change(screen.getByLabelText('Fuel comparison'), {
       target: { value: 'electricity' },
     });
+    expect(worker.terminate).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Replay these tariffs' })).toBeEnabled();
   });
 });

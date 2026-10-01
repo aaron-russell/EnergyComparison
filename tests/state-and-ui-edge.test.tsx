@@ -90,7 +90,7 @@ describe('replay state and tariff persistence', () => {
 });
 
 describe('tariff and results UI', () => {
-  it('edits tariff identity, prices, bands, EV settings and handles invalid submit', () => {
+  it('edits tariff identity, prices, bands, and EV settings', () => {
     const apply = vi.fn();
     const cancel = vi.fn();
     const tariff = structuredClone(exampleTariffs[0]);
@@ -104,6 +104,16 @@ describe('tariff and results UI', () => {
     expect(apply).toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel edit' }));
     expect(cancel).toHaveBeenCalled();
+  });
+
+  it('rejects an invalid tariff submission', () => {
+    const apply = vi.fn();
+    const tariff = structuredClone(exampleTariffs[0]);
+    render(<TariffEditor initial={tariff} apply={apply} cancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Add time band' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply tariff' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Electricity bands overlap');
+    expect(apply).not.toHaveBeenCalled();
   });
 
   it('covers tariff rate toggles and band edits', () => {
