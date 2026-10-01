@@ -191,7 +191,9 @@ function parseLookup(value: unknown): TariffTrackerLookup {
   if (
     !isRecord(value) ||
     !isRecord(value.data) ||
-    typeof value.data.electricity_region !== 'string'
+    (value.data.electricity_region !== undefined &&
+      value.data.electricity_region !== null &&
+      typeof value.data.electricity_region !== 'string')
   ) {
     throw new Error('Tariff Tracker returned malformed postcode data.');
   }

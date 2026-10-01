@@ -32,6 +32,9 @@ export function prepareReplay(
     (tariff) =>
       tariff.id === data.baselineId || renewable === 'all' || tariff.renewable === renewable,
   );
+  if (tariffs.length < 2) {
+    throw new Error('Add at least one compatible alternative tariff before comparing.');
+  }
   return {
     kind: 'replay',
     readings: source.filter((reading) => references.has(reading.supplyRef)),

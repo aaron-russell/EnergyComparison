@@ -25,11 +25,19 @@ function session(tariffs: SessionData['tariffs'], baselineId: string): SessionDa
 describe('replay tariff compatibility', () => {
   it.each(['dual', 'electricity', 'gas'])('keeps tariffs compatible with %s scope', (scope) => {
     const dual = structuredClone(exampleTariffs[0]);
+    const dualAlternative = { ...structuredClone(dual), id: 'dual-alternative' };
     const electricity = { ...structuredClone(dual), id: 'electricity-only', gas: undefined };
     const gas = { ...structuredClone(dual), id: 'gas-only', electricity: undefined };
     const expected =
-      scope === 'dual' ? [dual.id] : [dual.id, scope === 'electricity' ? electricity.id : gas.id];
-    const job = prepareReplay(session([dual, electricity, gas], dual.id), scope, 'observed', 'all');
+      scope === 'dual'
+        ? [dual.id, dualAlternative.id]
+        : [dual.id, dualAlternative.id, scope === 'electricity' ? electricity.id : gas.id];
+    const job = prepareReplay(
+      session([dual, dualAlternative, electricity, gas], dual.id),
+      scope,
+      'observed',
+      'all',
+    );
 
     expect(job.kind).toBe('replay');
     if (job.kind === 'replay') {
@@ -43,6 +51,13 @@ describe('replay tariff compatibility', () => {
     expect(() =>
       prepareReplay(session([electricity], electricity.id), 'dual', 'observed', 'all'),
     ).toThrow('baseline tariff does not include prices');
+  });
+
+  it('requires an alternative after compatibility filtering', () => {
+    const dual = structuredClone(exampleTariffs[0]);
+    expect(() => prepareReplay(session([dual], dual.id), 'dual', 'observed', 'all')).toThrow(
+      'alternative tariff',
+    );
   });
 });
 
