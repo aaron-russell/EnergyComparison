@@ -4,40 +4,83 @@ import { exampleTariffs, syntheticReadings, syntheticSupplies } from '../src/fix
 import { replay } from '../src/core/engine';
 import { midnight } from '../src/core/time';
 
-async function syntheticImport(
-  page: Page,
-  start = '2024-03-01',
-  end = '2024-04-01',
-  cancelAfterFirstBatch = false,
-) {
+test('combined production build serves the app and handbook', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('energy-replay:theme')) {
+      localStorage.setItem('energy-replay:theme', 'dark');
+    }
+  });
+  await page.goto('/docs/');
+  const docsResponse = await page.request.get('/docs/');
+  const docsCsp = docsResponse.headers()['content-security-policy'];
+  expect(docsCsp).toContain("script-src 'self'");
+  expect(docsCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  expect(docsResponse.headers()['referrer-policy']).toBe('no-referrer');
+  expect(docsResponse.headers()['x-content-type-options']).toBe('nosniff');
+  expect(docsResponse.headers()['cross-origin-opener-policy']).toBe('same-origin');
+  const appResponse = await page.request.get('/');
+  expect(appResponse.headers()['content-security-policy']).not.toMatch(
+    /script-src[^;]*'unsafe-inline'/,
+  );
+  await expect(page.locator('h1').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.getByRole('button', { name: 'Search' }).click();
+  const search = page.locator('#localsearch-input');
+  await expect(search).toBeVisible();
+  await search.fill('Tariffs and comparison');
+  await expect(
+    page.getByRole('link', { name: 'Tariffs and comparison', exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/docs/calculations.html');
+  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await page.getByRole('link', { name: 'Architecture', exact: true }).click();
+  await expect(page).toHaveURL(/\/docs\/architecture\.html$/);
+  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await page.goto('/docs/');
+  await page.getByRole('link', { name: 'Use the app' }).click();
+  await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
+  await expect(page.locator('h1#use-the-app')).toBeVisible();
+  await page.evaluate(() => localStorage.setItem('energy-replay:theme', 'light'));
+  await page.reload();
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  const nested = await page.request.get('/docs/guide/adding-an-ev-charger.html');
+  expect(nested.ok()).toBe(true);
+  expect(await nested.text()).toContain('Add an EV charger');
+  const asset = await page.request.get('/docs/logo.svg');
+  expect(asset.ok()).toBe(true);
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});
+
+async function syntheticImport(page: Page) {
   await page.goto('/');
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
   await page.getByRole('button', { name: 'Choose import period' }).click();
-  await page.getByLabel('Start date (included)').fill(start);
-  await page.getByLabel('End date (excluded)').fill(end);
+  await page.getByLabel('Start date (included)').fill('2024-03-01');
+  await page.getByLabel('End date (excluded)').fill('2024-04-01');
   await page.getByRole('button', { name: 'Import history / retry' }).click();
-  if (cancelAfterFirstBatch) {
-    await expect(page.getByText('Generating synthetic intervals', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Cancel' }).click();
-  }
   await expect(page.getByRole('button', { name: 'Review coverage' })).toBeEnabled();
   await page.getByRole('button', { name: 'Review coverage' }).click();
-}
-
-async function compareSyntheticPeriod(
-  page: Page,
-  start: string,
-  end: string,
-  cancelAfterFirstBatch = false,
-) {
-  await syntheticImport(page, start, end, cancelAfterFirstBatch);
-  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
-  await page.getByRole('button', { name: 'Continue to tariffs' }).click();
-  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
-  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
-  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
 }
 
 test('manual replacement meters connect as one supply without account discovery', async ({
@@ -113,57 +156,6 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
 });
 
-test('labels complete normal, leap and non-calendar-year periods correctly', async ({ page }) => {
-  test.setTimeout(120000);
-  await compareSyntheticPeriod(page, '2023-01-01', '2024-01-01');
-  await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByText('Baseline annual cost', { exact: true })).toBeVisible();
-  await expect(page.getByText('Baseline monthly cost', { exact: true })).toBeVisible();
-  await expect(page.locator('.annual-metrics > div').first()).toContainText('/yr');
-
-  await compareSyntheticPeriod(page, '2024-01-01', '2025-01-01');
-  await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByText('Baseline annual cost', { exact: true })).toBeVisible();
-  await expect(page.getByText('Baseline monthly cost', { exact: true })).toBeVisible();
-  await expect(page.locator('.annual-metrics > div').first()).toContainText('/yr');
-
-  await compareSyntheticPeriod(page, '2024-01-15', '2025-01-15');
-  await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
-    timeout: 30000,
-  });
-
-  await compareSyntheticPeriod(page, '2023-01-01', '2024-01-01', true);
-  await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
-    timeout: 30000,
-  });
-  const metrics = page.locator('.annual-metrics > div');
-  await expect(metrics).toHaveCount(4);
-  await expect(metrics.nth(0)).toContainText('kWh');
-  await expect(metrics.nth(0)).not.toContainText('/yr');
-  await expect(metrics.nth(1)).toContainText('kWh');
-  await expect(metrics.nth(1)).not.toContainText('/yr');
-  await expect(metrics.nth(2)).toContainText('Baseline period cost');
-  await expect(metrics.nth(2).locator('strong')).toHaveText(/£/);
-  await expect(metrics.nth(3)).toContainText('Baseline monthly equivalent');
-  await expect(metrics.nth(3).locator('strong')).toHaveText(/£/);
-});
-
 test('manual baseline editing, duplication, validation and persistence', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Tariffs 05' }).click();
@@ -230,32 +222,4 @@ test('credentials never enter storage and are cleared on reload under production
   expect(
     await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length),
   ).toBe(0);
-});
-
-test('Tariff Tracker imports through the production CSP', async ({ page }) => {
-  const requests: string[] = [];
-  await page.route('https://tarifftracker.io/api/v1/**', async (route) => {
-    requests.push(route.request().url());
-    if (route.request().url().includes('/lookup?')) {
-      await route.fulfill({
-        contentType: 'application/json',
-        body: '{"data":{"electricity_region":"Yorkshire"}}',
-      });
-      return;
-    }
-    await route.fulfill({
-      contentType: 'application/json',
-      body: '{"rows":[{"supplier":"Synthetic Supplier","tariff":"Fixed","product_code":"SYNTH","region":"Yorkshire","fuel":"electricity","kind":"fixed","payment":"direct debit","unit_p_kwh":25.1234567890123456789,"standing_p_day":51,"annual_est_gbp":1200}]}',
-    });
-  });
-  const response = await page.goto('/');
-  expect(response!.headers()['content-security-policy']).toContain('https://tarifftracker.io');
-  await page.getByRole('button', { name: 'Tariffs 05' }).click();
-  await page.getByLabel('Postcode').fill('L1 1AA');
-  await page.getByRole('button', { name: 'Load tariffs' }).click();
-  await expect(page.getByRole('heading', { name: /Synthetic Supplier · Fixed/ })).toBeVisible();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Loaded 1 tariffs for Yorkshire' }),
-  ).toBeVisible();
-  expect(requests).toHaveLength(2);
 });

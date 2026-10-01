@@ -12,6 +12,6 @@ export type SessionData = {
 };
 export type SessionProps = {
   data: SessionData;
-  update: (patch: Partial<SessionData> | ((current: SessionData) => Partial<SessionData>)) => void;
+  update: (patch: Partial<SessionData>) => void;
   next: () => void;
 };

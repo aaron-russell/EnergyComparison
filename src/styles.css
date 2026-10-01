@@ -262,54 +262,6 @@ main {
   margin-bottom: 24px;
   min-width: 0;
 }
-.tariff-tracker-import {
-  display: grid;
-  gap: 14px;
-  margin-top: 20px;
-  padding: 18px;
-  border: 1px solid var(--selected-border);
-  border-radius: 13px;
-  background: var(--selected);
-}
-.tariff-tracker-import p {
-  margin: 4px 0 0;
-}
-.tariff-tracker-import .form-row {
-  align-items: end;
-}
-.annual-summary {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: minmax(210px, 0.8fr) 2fr;
-}
-.annual-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-.annual-metrics div {
-  padding: 14px;
-  border-radius: 11px;
-  background: var(--raised);
-}
-.annual-metrics span {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-}
-.annual-metrics strong {
-  display: block;
-  margin-top: 7px;
-  font-size: 18px;
-}
-@media (max-width: 900px) {
-  .annual-summary {
-    grid-template-columns: 1fr;
-  }
-  .annual-metrics {
-    grid-template-columns: 1fr 1fr;
-  }
-}
 .accent-panel {
   background: radial-gradient(ellipse at top right, var(--glow), transparent 70%), var(--surface);
   padding: 32px;

@@ -69,12 +69,7 @@ export function ComparePage({ data }: SessionProps) {
             result={results[0]}
             estimatedShare={view === 'estimated' ? data.estimated?.estimatedShare : undefined}
           />
-          <ReplayResults
-            results={results}
-            tariffs={data.tariffs}
-            baselineId={data.baselineId}
-            period={data.period}
-          />
+          <ReplayResults results={results} tariffs={data.tariffs} baselineId={data.baselineId} />
         </>
       )}
     </>
