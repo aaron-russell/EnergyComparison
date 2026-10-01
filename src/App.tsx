@@ -64,6 +64,10 @@ export default function App({ reset }: { reset: () => void }) {
             <ConnectionPage
               connection={session.connection}
               connected={session.connected}
+              loadDemo={() => {
+                session.loadDemo();
+                navigate(5);
+              }}
               next={props.next}
             />
           )}

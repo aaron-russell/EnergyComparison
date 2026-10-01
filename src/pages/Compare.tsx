@@ -65,6 +65,18 @@ export function ComparePage({ data }: SessionProps) {
       </section>
       {!!results.length && (
         <>
+          {data.isDemo && (
+            <div className="demo-banner" role="status">
+              <span className="demo-dot" />
+              <div>
+                <strong>Demo data</strong>
+                <p>
+                  This comparison uses generated 12-month household usage and EV charging. No
+                  account data is included.
+                </p>
+              </div>
+            </div>
+          )}
           <ReplayNotice
             result={results[0]}
             estimatedShare={view === 'estimated' ? data.estimated?.estimatedShare : undefined}

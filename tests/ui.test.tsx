@@ -61,6 +61,7 @@ const data = (overrides: Partial<SessionData> = {}): SessionData => ({
   estimated: null,
   tariffs: structuredClone(exampleTariffs),
   baselineId: exampleTariffs[0].id,
+  isDemo: false,
   ...overrides,
 });
 const props = (overrides: Partial<SessionData> = {}): SessionProps => ({
@@ -258,7 +259,9 @@ describe('page journeys', () => {
       signal = context.signal;
       return pending;
     });
-    render(<ConnectionPage connection={null} connected={connected} next={vi.fn()} />);
+    render(
+      <ConnectionPage connection={null} connected={connected} loadDemo={vi.fn()} next={vi.fn()} />,
+    );
     fireEvent.change(screen.getByLabelText('Energy provider'), { target: { value: 'synthetic' } });
     fireEvent.click(screen.getByRole('button', { name: 'Connect provider' }));
     expect(signal).toBeDefined();
@@ -267,6 +270,15 @@ describe('page journeys', () => {
     resolveConnection({ ...connection, disconnect });
     await waitFor(() => expect(disconnect).toHaveBeenCalled());
     expect(connected).not.toHaveBeenCalled();
+  });
+
+  it('offers a complete demo workspace without connecting a provider', () => {
+    const loadDemo = vi.fn();
+    render(
+      <ConnectionPage connection={null} connected={vi.fn()} loadDemo={loadDemo} next={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Load complete demo' }));
+    expect(loadDemo).toHaveBeenCalledOnce();
   });
 
   it('renders import options and imports readings', async () => {

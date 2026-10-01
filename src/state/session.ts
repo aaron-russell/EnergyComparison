@@ -9,6 +9,7 @@ export type SessionData = {
   estimated: EstimateResult | null;
   tariffs: Tariff[];
   baselineId: string;
+  isDemo: boolean;
 };
 export type SessionProps = {
   data: SessionData;
