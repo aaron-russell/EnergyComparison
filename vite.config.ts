@@ -27,7 +27,7 @@ const headersFor = (path: string) =>
 const docsHeaders = { ...headersFor('/docs/') };
 try {
   const docsHtml = readFileSync(new URL('./dist/docs/index.html', import.meta.url), 'utf8');
-  const hashes = [...docsHtml.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/g)].map(
+  const hashes = [...docsHtml.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/gi)].map(
     ([, script]) => `'sha256-${createHash('sha256').update(script).digest('base64')}'`,
   );
   docsHeaders['Content-Security-Policy'] = docsHeaders['Content-Security-Policy'].replace(

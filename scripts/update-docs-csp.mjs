@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const html = readFileSync('dist/docs/index.html', 'utf8');
-const hashes = [...html.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/g)].map(
+const hashes = [...html.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/gi)].map(
   ([, script]) => `'sha256-${createHash('sha256').update(script).digest('base64')}'`,
 );
 const path = 'dist/_headers';
