@@ -15,6 +15,9 @@ test('combined production build serves the app and handbook', async ({ page }) =
   const docsCsp = docsResponse.headers()['content-security-policy'];
   expect(docsCsp).toContain("script-src 'self'");
   expect(docsCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  expect(docsResponse.headers()['referrer-policy']).toBe('no-referrer');
+  expect(docsResponse.headers()['x-content-type-options']).toBe('nosniff');
+  expect(docsResponse.headers()['cross-origin-opener-policy']).toBe('same-origin');
   const appResponse = await page.request.get('/');
   expect(appResponse.headers()['content-security-policy']).not.toMatch(
     /script-src[^;]*'unsafe-inline'/,

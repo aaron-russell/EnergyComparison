@@ -21,9 +21,9 @@ const headerBlocks = readFileSync(new URL('./public/_headers', import.meta.url),
 
 const headersFor = (path: string) => {
   const common = headerBlocks.find((block) => block.path === '/*')?.headers ?? {};
-  const specific = headerBlocks.find(
-    (block) => block.path !== '/*' && path.startsWith(block.path),
-  )?.headers;
+  const specific = headerBlocks
+    .filter((block) => block.path !== '/*' && path.startsWith(block.path))
+    .sort((left, right) => right.path.length - left.path.length)[0]?.headers;
   return { ...common, ...specific };
 };
 
