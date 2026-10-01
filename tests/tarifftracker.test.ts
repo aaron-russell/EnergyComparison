@@ -73,6 +73,30 @@ describe('Tariff Tracker adapter', () => {
     });
     expect(result.tariffs[1].gas).toBeUndefined();
     expect(result.tariffs[2].electricity).toBeUndefined();
+    expect(result.tariffs[0].name).toContain('direct debit');
+  });
+
+  it('preserves signed unit rates and payment variants', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      json({
+        rows: [
+          row({ fuel: 'electricity', unit_p_kwh: '-2.5', product_code: 'VARIANT' }),
+          row({
+            fuel: 'electricity',
+            unit_p_kwh: '2.5',
+            payment: 'prepayment',
+            product_code: 'VARIANT',
+          }),
+        ],
+      }),
+    );
+    vi.stubGlobal('fetch', fetcher);
+
+    const result = await fetchTariffs('Yorkshire');
+    expect(result.tariffs).toHaveLength(2);
+    expect(result.tariffs[0].electricity?.bands[0].rate).toBe('-2.5');
+    expect(result.tariffs[0].id).not.toBe(result.tariffs[1].id);
+    expect(result.tariffs[1].name).toContain('prepayment');
   });
 
   it('rejects malformed responses and HTTP failures', async () => {

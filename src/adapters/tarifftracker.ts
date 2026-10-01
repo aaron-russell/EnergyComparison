@@ -85,14 +85,15 @@ function numberToken(source: string, index: number): string | undefined {
   return source.slice(index).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/)?.[0];
 }
 
-function isAmount(value: unknown): value is DecimalString {
+function isAmount(value: unknown, signed = false): value is DecimalString {
   if (typeof value !== 'string' || value.length > 64) {
     return false;
   }
-  if (/^\d+(\.\d+)?$/.test(value)) {
+  const sign = signed ? '-?' : '';
+  if (new RegExp(`^${sign}\\d+(\\.\\d+)?$`).test(value)) {
     return value.length <= 30;
   }
-  if (!/^\d+(?:\.\d+)?[eE][+-]?\d+$/.test(value)) {
+  if (!new RegExp(`^${sign}\\d+(?:\\.\\d+)?[eE][+-]?\\d+$`).test(value)) {
     return false;
   }
   const exponent = Number(value.slice(value.search(/[eE]/) + 1));
@@ -143,18 +144,18 @@ function hasRowIdentity(value: Record<string, unknown>): boolean {
 
 function hasValidGasFields(value: Record<string, unknown>): boolean {
   return (
-    isOptionalAmount(value.gas_unit_p_kwh) &&
+    isOptionalAmount(value.gas_unit_p_kwh, true) &&
     isOptionalAmount(value.gas_standing_p_day) &&
     isOptionalAmount(value.term_months) &&
     isOptionalAmount(value.exit_fee_gbp) &&
     (value.closes === undefined || value.closes === null || typeof value.closes === 'string') &&
     (value.fuel !== 'dual' ||
-      (isAmount(value.gas_unit_p_kwh) && isAmount(value.gas_standing_p_day)))
+      (isAmount(value.gas_unit_p_kwh, true) && isAmount(value.gas_standing_p_day)))
   );
 }
 
-function isOptionalAmount(value: unknown): boolean {
-  return value === undefined || value === null || isAmount(value);
+function isOptionalAmount(value: unknown, signed = false): boolean {
+  return value === undefined || value === null || isAmount(value, signed);
 }
 
 function isRow(value: unknown): value is TariffTrackerRow {
@@ -163,7 +164,7 @@ function isRow(value: unknown): value is TariffTrackerRow {
   }
   return (
     hasRowIdentity(value) &&
-    isAmount(value.unit_p_kwh) &&
+    isAmount(value.unit_p_kwh, true) &&
     isAmount(value.standing_p_day) &&
     isAmount(value.annual_est_gbp) &&
     hasValidGasFields(value)
@@ -229,13 +230,23 @@ function fromRow(row: TariffTrackerRow): Tariff {
   const suffix = row.fuel === 'dual' ? 'dual fuel' : row.fuel;
   return validateTariff({
     version: 1,
-    id: `tarifftracker:${row.product_code}:${row.region}:${row.fuel}`,
-    name: `${row.supplier} · ${row.tariff} (${suffix})`,
+    id: `tarifftracker:${identityHash(row)}`,
+    name: `${row.supplier} · ${row.tariff} (${row.payment} · ${suffix})`,
     renewable: 'unknown',
     electricity,
     gas,
     annualCredit: '0',
   });
+}
+
+function identityHash(row: TariffTrackerRow): string {
+  const identity = [row.supplier, row.product_code, row.payment, row.region, row.fuel].join('|');
+  let hash = 2166136261;
+  for (const character of identity) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 export async function lookupRegion(postcode: string, signal?: AbortSignal): Promise<string> {

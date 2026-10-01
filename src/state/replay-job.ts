@@ -18,6 +18,9 @@ export function prepareReplay(
   if (!source) {
     throw new Error('Create an estimated view before selecting it.');
   }
+  if (!data.baselineId) {
+    throw new Error('Choose a baseline tariff first.');
+  }
   const references = new Set(supplies.map((supply) => supply.ref));
   const compatible = data.tariffs.filter((tariff) =>
     supplies.every((supply) => tariff[supply.fuel]),
@@ -29,9 +32,6 @@ export function prepareReplay(
     (tariff) =>
       tariff.id === data.baselineId || renewable === 'all' || tariff.renewable === renewable,
   );
-  if (!tariffs.some((tariff) => tariff.id === data.baselineId)) {
-    throw new Error('Choose a baseline tariff first.');
-  }
   return {
     kind: 'replay',
     readings: source.filter((reading) => references.has(reading.supplyRef)),

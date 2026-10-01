@@ -138,14 +138,16 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sourceNote, setSourceNote] = useState('');
+  const [caveats, setCaveats] = useState<string[]>([]);
   const startRequest = useAbortableRequest();
   const load = async () => {
     const requestController = startRequest();
     setLoading(true);
     setError('');
     setSourceNote('');
+    setCaveats([]);
     try {
-      const { resolvedRegion, tariffs, asOf } = await requestTariffs(
+      const { resolvedRegion, tariffs, asOf, caveats } = await requestTariffs(
         postcode,
         region,
         requestController.signal,
@@ -158,6 +160,7 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
         setSourceNote(
           `Loaded ${tariffs.length} tariffs for ${resolvedRegion}${asOf ? ` · prices checked ${asOf.slice(0, 10)}` : ''}.`,
         );
+        setCaveats(caveats);
       }
     } catch (failure) {
       if (!requestController.signal.aborted) {
@@ -202,14 +205,35 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
       </div>
       <ErrorNotice message={error} />
       <p role="status">{sourceNote}</p>
-      <small>
-        Open data from{' '}
-        <a href="https://tarifftracker.io/api/" target="_blank" rel="noreferrer">
-          Tariff Tracker
-        </a>
-        . Supplier rates and terms should be checked before switching.
-      </small>
+      <TariffCaveats caveats={caveats} />
+      <TariffTrackerDisclosure />
     </div>
+  );
+}
+
+function TariffCaveats({ caveats }: { caveats: string[] }) {
+  if (!caveats.length) {
+    return null;
+  }
+  return (
+    <ul className="muted">
+      {caveats.map((caveat, index) => (
+        <li key={`${index}-${caveat}`}>{caveat}</li>
+      ))}
+    </ul>
+  );
+}
+
+function TariffTrackerDisclosure() {
+  return (
+    <small>
+      Open data from{' '}
+      <a href="https://tarifftracker.io/api/" target="_blank" rel="noreferrer">
+        Tariff Tracker
+      </a>
+      . Your postcode, if supplied, is sent to Tariff Tracker to resolve the electricity region.
+      Supplier rates and terms should be checked before switching.
+    </small>
   );
 }
 

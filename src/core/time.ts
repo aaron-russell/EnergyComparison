@@ -80,10 +80,8 @@ export function isAnnualPeriod(period: Period, complete: boolean): boolean {
   const end = local(period.end).toPlainDate();
   return (
     complete &&
-    start.month === 1 &&
     start.day === 1 &&
-    end.month === 1 &&
     end.day === 1 &&
-    end.year === start.year + 1
+    Temporal.PlainDate.compare(end, start.add({ months: 12 })) === 0
   );
 }

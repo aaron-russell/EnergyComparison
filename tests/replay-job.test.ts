@@ -47,7 +47,7 @@ describe('replay tariff compatibility', () => {
 });
 
 describe('annual result classification', () => {
-  it('recognises complete normal and leap calendar years only', () => {
+  it('recognises complete normal, leap, and non-January years', () => {
     expect(
       isAnnualPeriod({ start: '2023-01-01T00:00:00Z', end: '2024-01-01T00:00:00Z' }, true),
     ).toBe(true);
@@ -57,6 +57,9 @@ describe('annual result classification', () => {
     expect(
       isAnnualPeriod({ start: '2024-01-15T00:00:00Z', end: '2025-01-15T00:00:00Z' }, true),
     ).toBe(false);
+    expect(
+      isAnnualPeriod({ start: '2024-10-01T00:00:00Z', end: '2025-10-01T00:00:00Z' }, true),
+    ).toBe(true);
     expect(
       isAnnualPeriod({ start: '2023-01-01T00:00:00Z', end: '2024-01-01T00:00:00Z' }, false),
     ).toBe(false);

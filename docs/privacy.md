@@ -4,6 +4,8 @@ The browser holds credentials, upstream meter/device identifiers, consumption, c
 and results in memory. Supplier API requests go directly to fixed HTTPS destinations with cookies
 omitted, caching disabled, redirects rejected and referrers omitted. The app never sends this data
 to its own host. The energy engine receives anonymous supply references, not upstream identifiers.
+If you use the Tariff Tracker postcode lookup, the entered postcode is sent directly to
+`tarifftracker.io` to resolve an electricity region; it is not stored by this app.
 
 Names and addresses in Pod Point reports are discarded during normalisation. Raw file contents are
 held temporarily in component memory while validating and are cleared after a successful preview.
