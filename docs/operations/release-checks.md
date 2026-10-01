@@ -41,7 +41,7 @@ clear the session and dispose of local files. Do not commit reports or screensho
 ## Hosted release gate
 
 Verify `/`, `/docs/`, nested docs routes, docs assets, application SPA fallback, CSP, MIME types,
-worker loading, JSON import/export, HTTPS, and self-hosted assets. Confirm Web Analytics, Zaraz,
-service workers, sensitive browser storage, and application logging are absent. Keep the last successful
-deployment available for rollback and record the tested provider/report versions without account
-identifiers.
+worker loading, JSON import/export, HTTPS, and self-hosted assets. Confirm the Cloudflare Web
+Analytics beacon is present and no Zaraz, additional analytics, service workers, sensitive browser
+storage, or application logging is present. Keep the last successful deployment available for
+rollback and record the tested provider/report versions without account identifiers.

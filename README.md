@@ -93,7 +93,8 @@ Reference pages cover the [adapter contracts](docs/reference/contracts.md), [nor
 
 Only explicitly saved tariffs and the theme preference persist. Exports contain tariffs only.
 Refresh, page exit and Clear session dispose of imports, credentials, connections and workers.
-The application contains no analytics, service worker, sensitive logging or remote fonts.
+The application uses only Cloudflare Web Analytics for privacy-focused performance and usage
+measurement; it has no other analytics, service worker, sensitive logging or remote fonts.
 
 ## Release status
 
