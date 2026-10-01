@@ -4,7 +4,12 @@ import { exampleTariffs, syntheticReadings, syntheticSupplies } from '../src/fix
 import { replay } from '../src/core/engine';
 import { midnight } from '../src/core/time';
 
-async function syntheticImport(page: Page, start = '2024-03-01', end = '2024-04-01') {
+async function syntheticImport(
+  page: Page,
+  start = '2024-03-01',
+  end = '2024-04-01',
+  cancelAfterFirstBatch = false,
+) {
   await page.goto('/');
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
@@ -12,12 +17,21 @@ async function syntheticImport(page: Page, start = '2024-03-01', end = '2024-04-
   await page.getByLabel('Start date (included)').fill(start);
   await page.getByLabel('End date (excluded)').fill(end);
   await page.getByRole('button', { name: 'Import history / retry' }).click();
+  if (cancelAfterFirstBatch) {
+    await expect(page.getByText('Generating synthetic intervals', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+  }
   await expect(page.getByRole('button', { name: 'Review coverage' })).toBeEnabled();
   await page.getByRole('button', { name: 'Review coverage' }).click();
 }
 
-async function compareSyntheticPeriod(page: Page, start: string, end: string) {
-  await syntheticImport(page, start, end);
+async function compareSyntheticPeriod(
+  page: Page,
+  start: string,
+  end: string,
+  cancelAfterFirstBatch = false,
+) {
+  await syntheticImport(page, start, end, cancelAfterFirstBatch);
   await page.getByRole('button', { name: 'Review optional EV charging' }).click();
   await page.getByRole('button', { name: 'Continue to tariffs' }).click();
   await page.getByRole('button', { name: 'Load synthetic examples' }).click();
@@ -100,6 +114,7 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
 });
 
 test('labels complete normal, leap and non-calendar-year periods correctly', async ({ page }) => {
+  test.setTimeout(120000);
   await compareSyntheticPeriod(page, '2023-01-01', '2024-01-01');
   await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
     timeout: 30000,
@@ -107,6 +122,9 @@ test('labels complete normal, leap and non-calendar-year periods correctly', asy
   await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
     timeout: 30000,
   });
+  await expect(page.getByText('Baseline annual cost', { exact: true })).toBeVisible();
+  await expect(page.getByText('Baseline monthly cost', { exact: true })).toBeVisible();
+  await expect(page.locator('.annual-metrics > div').first()).toContainText('/yr');
 
   await compareSyntheticPeriod(page, '2024-01-01', '2025-01-01');
   await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
@@ -115,6 +133,9 @@ test('labels complete normal, leap and non-calendar-year periods correctly', asy
   await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
     timeout: 30000,
   });
+  await expect(page.getByText('Baseline annual cost', { exact: true })).toBeVisible();
+  await expect(page.getByText('Baseline monthly cost', { exact: true })).toBeVisible();
+  await expect(page.locator('.annual-metrics > div').first()).toContainText('/yr');
 
   await compareSyntheticPeriod(page, '2024-01-15', '2025-01-15');
   await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
@@ -123,6 +144,24 @@ test('labels complete normal, leap and non-calendar-year periods correctly', asy
   await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
     timeout: 30000,
   });
+
+  await compareSyntheticPeriod(page, '2023-01-01', '2024-01-01', true);
+  await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
+    timeout: 30000,
+  });
+  const metrics = page.locator('.annual-metrics > div');
+  await expect(metrics).toHaveCount(4);
+  await expect(metrics.nth(0)).toContainText('kWh');
+  await expect(metrics.nth(0)).not.toContainText('/yr');
+  await expect(metrics.nth(1)).toContainText('kWh');
+  await expect(metrics.nth(1)).not.toContainText('/yr');
+  await expect(metrics.nth(2)).toContainText('Baseline period cost');
+  await expect(metrics.nth(2).locator('strong')).toHaveText(/£/);
+  await expect(metrics.nth(3)).toContainText('Baseline monthly equivalent');
+  await expect(metrics.nth(3).locator('strong')).toHaveText(/£/);
 });
 
 test('manual baseline editing, duplication, validation and persistence', async ({ page }) => {
