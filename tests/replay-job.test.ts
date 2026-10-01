@@ -23,20 +23,17 @@ function session(tariffs: SessionData['tariffs'], baselineId: string): SessionDa
 }
 
 describe('replay tariff compatibility', () => {
-  it('keeps only tariffs that cover every selected fuel', () => {
+  it.each(['dual', 'electricity', 'gas'])('keeps tariffs compatible with %s scope', (scope) => {
     const dual = structuredClone(exampleTariffs[0]);
     const electricity = { ...structuredClone(dual), id: 'electricity-only', gas: undefined };
     const gas = { ...structuredClone(dual), id: 'gas-only', electricity: undefined };
-    const job = prepareReplay(
-      session([dual, electricity, gas], dual.id),
-      'dual',
-      'observed',
-      'all',
-    );
+    const expected =
+      scope === 'dual' ? [dual.id] : [dual.id, scope === 'electricity' ? electricity.id : gas.id];
+    const job = prepareReplay(session([dual, electricity, gas], dual.id), scope, 'observed', 'all');
 
     expect(job.kind).toBe('replay');
     if (job.kind === 'replay') {
-      expect(job.tariffs.map((tariff) => tariff.id)).toEqual([dual.id]);
+      expect(job.tariffs.map((tariff) => tariff.id)).toEqual(expected);
     }
   });
 

@@ -192,3 +192,31 @@ test('credentials never enter storage and are cleared on reload under production
     await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length),
   ).toBe(0);
 });
+
+test('Tariff Tracker imports through the production CSP', async ({ page }) => {
+  const requests: string[] = [];
+  await page.route('https://tarifftracker.io/api/v1/**', async (route) => {
+    requests.push(route.request().url());
+    if (route.request().url().includes('/lookup?')) {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: '{"data":{"electricity_region":"Yorkshire"}}',
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: '{"rows":[{"supplier":"Synthetic Supplier","tariff":"Fixed","product_code":"SYNTH","region":"Yorkshire","fuel":"electricity","kind":"fixed","payment":"direct debit","unit_p_kwh":25.1234567890123456789,"standing_p_day":51,"annual_est_gbp":1200}]}',
+    });
+  });
+  const response = await page.goto('/');
+  expect(response!.headers()['content-security-policy']).toContain('https://tarifftracker.io');
+  await page.getByRole('button', { name: 'Tariffs 05' }).click();
+  await page.getByLabel('Postcode').fill('L1 1AA');
+  await page.getByRole('button', { name: 'Load tariffs' }).click();
+  await expect(page.getByRole('heading', { name: /Synthetic Supplier · Fixed/ })).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Loaded 1 tariffs for Yorkshire' }),
+  ).toBeVisible();
+  expect(requests).toHaveLength(2);
+});

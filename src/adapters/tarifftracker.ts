@@ -1,5 +1,8 @@
 import Decimal from '../core/decimal';
-import type { Tariff } from '../core/types';
+import { validateTariff } from '../core/tariff';
+import type { Tariff, DecimalString } from '../core/types';
+import { request } from './transport';
+import type { ResponseDecoder } from './response';
 
 const API = 'https://tarifftracker.io/api/v1';
 
@@ -11,13 +14,13 @@ export type TariffTrackerRow = {
   fuel: 'electricity' | 'gas' | 'dual';
   kind: 'fixed' | 'variable';
   payment: string;
-  unit_p_kwh: number;
-  standing_p_day: number;
-  gas_unit_p_kwh?: number | null;
-  gas_standing_p_day?: number | null;
-  term_months?: number | null;
-  exit_fee_gbp?: number | null;
-  annual_est_gbp: number;
+  unit_p_kwh: DecimalString;
+  standing_p_day: DecimalString;
+  gas_unit_p_kwh?: DecimalString | null;
+  gas_standing_p_day?: DecimalString | null;
+  term_months?: DecimalString | null;
+  exit_fee_gbp?: DecimalString | null;
+  annual_est_gbp: DecimalString;
   closes?: string | null;
 };
 
@@ -37,33 +40,85 @@ export type TariffTrackerLookup = {
   electricity_region?: string | null;
 };
 
-async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  if (signal?.aborted) {
-    throw new DOMException('The operation was aborted.', 'AbortError');
+const decodeLosslessJson: ResponseDecoder = async (response) =>
+  JSON.parse(quoteJsonNumbers(await response.text())) as unknown;
+
+function quoteJsonNumbers(source: string): string {
+  let result = '';
+  for (let index = 0; index < source.length;) {
+    if (source[index] === '"') {
+      const end = stringEnd(source, index);
+      result += source.slice(index, end);
+      index = end;
+      continue;
+    }
+    const number = numberToken(source, index);
+    if (number) {
+      result += JSON.stringify(number);
+      index += number.length;
+      continue;
+    }
+    result += source[index];
+    index += 1;
   }
-  const response = await fetch(url, {
-    signal,
-    credentials: 'omit',
-    cache: 'no-store',
-    redirect: 'error',
-    headers: { Accept: 'application/json' },
-  });
-  if (!response.ok) {
-    throw new Error(`Tariff Tracker returned ${response.status}.`);
+  return result;
+}
+
+function stringEnd(source: string, start: number): number {
+  let escaped = false;
+  for (let index = start + 1; index < source.length; index += 1) {
+    if (escaped) {
+      escaped = false;
+    } else if (source[index] === '\\') {
+      escaped = true;
+    } else if (source[index] === '"') {
+      return index + 1;
+    }
   }
-  try {
-    return (await response.json()) as T;
-  } catch {
-    throw new Error('Tariff Tracker returned unreadable JSON.');
+  return source.length;
+}
+
+function numberToken(source: string, index: number): string | undefined {
+  if (source[index] !== '-' && (source[index] < '0' || source[index] > '9')) {
+    return undefined;
   }
+  return source.slice(index).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/)?.[0];
+}
+
+function isAmount(value: unknown): value is DecimalString {
+  if (typeof value !== 'string' || value.length > 64) {
+    return false;
+  }
+  if (/^\d+(\.\d+)?$/.test(value)) {
+    return value.length <= 30;
+  }
+  if (!/^\d+(?:\.\d+)?[eE][+-]?\d+$/.test(value)) {
+    return false;
+  }
+  const exponent = Number(value.slice(value.search(/[eE]/) + 1));
+  return (
+    Number.isInteger(exponent) &&
+    Math.abs(exponent) <= 30 &&
+    new Decimal(value).toFixed().length <= 30
+  );
+}
+
+function amountString(value: DecimalString): DecimalString {
+  return value.includes('e') || value.includes('E') ? new Decimal(value).toFixed() : value;
+}
+
+async function getJson(url: string, signal?: AbortSignal): Promise<unknown> {
+  return request(
+    url,
+    { headers: { Accept: 'application/json' } },
+    signal ?? new AbortController().signal,
+    fetch,
+    decodeLosslessJson,
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value);
 }
 
 function isFuel(value: unknown): value is TariffTrackerRow['fuel'] {
@@ -86,16 +141,32 @@ function hasRowIdentity(value: Record<string, unknown>): boolean {
   );
 }
 
+function hasValidGasFields(value: Record<string, unknown>): boolean {
+  return (
+    isOptionalAmount(value.gas_unit_p_kwh) &&
+    isOptionalAmount(value.gas_standing_p_day) &&
+    isOptionalAmount(value.term_months) &&
+    isOptionalAmount(value.exit_fee_gbp) &&
+    (value.closes === undefined || value.closes === null || typeof value.closes === 'string') &&
+    (value.fuel !== 'dual' ||
+      (isAmount(value.gas_unit_p_kwh) && isAmount(value.gas_standing_p_day)))
+  );
+}
+
+function isOptionalAmount(value: unknown): boolean {
+  return value === undefined || value === null || isAmount(value);
+}
+
 function isRow(value: unknown): value is TariffTrackerRow {
   if (!isRecord(value)) {
     return false;
   }
   return (
     hasRowIdentity(value) &&
-    typeof value.payment === 'string' &&
-    isFiniteNumber(value.unit_p_kwh) &&
-    isFiniteNumber(value.standing_p_day) &&
-    isFiniteNumber(value.annual_est_gbp)
+    isAmount(value.unit_p_kwh) &&
+    isAmount(value.standing_p_day) &&
+    isAmount(value.annual_est_gbp) &&
+    hasValidGasFields(value)
   );
 }
 
@@ -126,30 +197,25 @@ function parseLookup(value: unknown): TariffTrackerLookup {
   return value.data as TariffTrackerLookup;
 }
 
-function poundsToPence(value: number | null | undefined): string {
-  return value === null || value === undefined ? '0' : value.toString();
-}
-
 function fromRow(row: TariffTrackerRow): Tariff {
+  const unit = amountString(row.unit_p_kwh);
+  const standing = amountString(row.standing_p_day);
   const electricityStanding =
-    row.fuel === 'dual' && row.gas_standing_p_day !== null && row.gas_standing_p_day !== undefined
-      ? new Decimal(row.standing_p_day).sub(row.gas_standing_p_day).toString()
-      : row.standing_p_day;
+    row.fuel === 'dual'
+      ? new Decimal(standing).sub(amountString(row.gas_standing_p_day!)).toString()
+      : standing;
   const electricity =
     row.fuel === 'gas'
       ? undefined
       : {
-          standing:
-            typeof electricityStanding === 'string'
-              ? electricityStanding
-              : poundsToPence(electricityStanding),
+          standing: electricityStanding,
           bands: [
             {
               name: 'All day',
               days: [1, 2, 3, 4, 5, 6, 7],
               start: '00:00',
               end: '00:00',
-              rate: poundsToPence(row.unit_p_kwh),
+              rate: unit,
             },
           ],
         };
@@ -157,13 +223,11 @@ function fromRow(row: TariffTrackerRow): Tariff {
     row.fuel === 'electricity'
       ? undefined
       : {
-          standing: poundsToPence(
-            row.fuel === 'dual' ? row.gas_standing_p_day : row.standing_p_day,
-          ),
-          rate: poundsToPence(row.fuel === 'dual' ? row.gas_unit_p_kwh : row.unit_p_kwh),
+          standing: row.fuel === 'dual' ? amountString(row.gas_standing_p_day!) : standing,
+          rate: row.fuel === 'dual' ? amountString(row.gas_unit_p_kwh!) : unit,
         };
   const suffix = row.fuel === 'dual' ? 'dual fuel' : row.fuel;
-  return {
+  return validateTariff({
     version: 1,
     id: `tarifftracker:${row.product_code}:${row.region}:${row.fuel}`,
     name: `${row.supplier} · ${row.tariff} (${suffix})`,
@@ -171,7 +235,7 @@ function fromRow(row: TariffTrackerRow): Tariff {
     electricity,
     gas,
     annualCredit: '0',
-  };
+  });
 }
 
 export async function lookupRegion(postcode: string, signal?: AbortSignal): Promise<string> {
@@ -180,7 +244,7 @@ export async function lookupRegion(postcode: string, signal?: AbortSignal): Prom
     throw new Error('Enter a postcode first.');
   }
   const result = parseLookup(
-    await getJson<unknown>(`${API}/lookup?postcode=${encodeURIComponent(value)}`, signal),
+    await getJson(`${API}/lookup?postcode=${encodeURIComponent(value)}`, signal),
   );
   const region = result.electricity_region;
   if (!region) {
@@ -198,7 +262,7 @@ export async function fetchTariffs(
     throw new Error('Choose an electricity region first.');
   }
   const result = parseEnvelope(
-    await getJson<unknown>(`${API}/energy/tariffs?region=${encodeURIComponent(value)}`, signal),
+    await getJson(`${API}/energy/tariffs?region=${encodeURIComponent(value)}`, signal),
   );
   const rows = result.rows ?? [];
   return {

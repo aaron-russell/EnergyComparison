@@ -9,11 +9,11 @@ const row = (overrides: Partial<TariffTrackerRow> = {}): TariffTrackerRow => ({
   fuel: 'dual',
   kind: 'fixed',
   payment: 'direct debit',
-  unit_p_kwh: 25.123456789,
-  standing_p_day: 51.00000000000001,
-  gas_unit_p_kwh: 7.123456789,
-  gas_standing_p_day: 31.00000000000001,
-  annual_est_gbp: 1200,
+  unit_p_kwh: '25.123456789',
+  standing_p_day: '51.00000000000001',
+  gas_unit_p_kwh: '7.123456789',
+  gas_standing_p_day: '31.00000000000001',
+  annual_est_gbp: '1200',
   ...overrides,
 });
 
@@ -30,7 +30,12 @@ describe('Tariff Tracker adapter', () => {
     await expect(lookupRegion('L1 1AA')).resolves.toBe('Yorkshire');
     expect(fetcher).toHaveBeenCalledWith(
       'https://tarifftracker.io/api/v1/lookup?postcode=L1%201AA',
-      expect.objectContaining({ credentials: 'omit', cache: 'no-store', redirect: 'error' }),
+      expect.objectContaining({
+        credentials: 'omit',
+        cache: 'no-store',
+        redirect: 'error',
+        referrerPolicy: 'no-referrer',
+      }),
     );
   });
 
@@ -78,7 +83,38 @@ describe('Tariff Tracker adapter', () => {
     vi.stubGlobal('fetch', fetcher);
 
     await expect(fetchTariffs('Yorkshire')).rejects.toThrow('malformed tariff data');
-    await expect(fetchTariffs('Yorkshire')).rejects.toThrow('returned 503');
+    await expect(fetchTariffs('Yorkshire')).rejects.toMatchObject({ code: 'network' });
+  });
+
+  it('preserves upstream numeric tokens and validates dual-fuel rates and mapped tariffs', async () => {
+    const body = `{"rows":[{"supplier":"Test Energy","tariff":"Precise","product_code":"PRECISE","region":"Yorkshire","fuel":"electricity","kind":"fixed","payment":"direct debit","unit_p_kwh":25.123456789012345678901,"standing_p_day":51.000000000000000001,"annual_est_gbp":1200} ]}`;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));
+    const result = await fetchTariffs('Yorkshire');
+    expect(result.tariffs[0].electricity).toMatchObject({
+      standing: '51.000000000000000001',
+      bands: [{ rate: '25.123456789012345678901' }],
+    });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        json({
+          rows: [
+            row({
+              gas_unit_p_kwh: null,
+              gas_standing_p_day: null,
+            }),
+          ],
+        }),
+      ),
+    );
+    await expect(fetchTariffs('Yorkshire')).rejects.toThrow('malformed tariff data');
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(json({ rows: [row({ supplier: 'x'.repeat(101) })] })),
+    );
+    await expect(fetchTariffs('Yorkshire')).rejects.toThrow('Invalid tariff');
   });
 
   it('does not issue a request after cancellation', async () => {
@@ -88,7 +124,7 @@ describe('Tariff Tracker adapter', () => {
     vi.stubGlobal('fetch', fetcher);
 
     await expect(fetchTariffs('Yorkshire', controller.signal)).rejects.toMatchObject({
-      name: 'AbortError',
+      code: 'cancelled',
     });
     expect(fetcher).not.toHaveBeenCalled();
   });

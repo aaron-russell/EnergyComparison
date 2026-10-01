@@ -1,4 +1,4 @@
-import { object, list, str, readResponse } from './response';
+import { object, list, str, readResponse, type ResponseDecoder } from './response';
 export { object, list, str } from './response';
 import { IntegrationError } from './contracts';
 export const cancelled = (signal: AbortSignal) => {
@@ -25,6 +25,7 @@ export async function request(
   init: RequestInit,
   signal: AbortSignal,
   fetcher: typeof fetch = fetch,
+  decode?: ResponseDecoder,
 ): Promise<unknown> {
   for (let attempt = 0; attempt < 3; attempt++) {
     cancelled(signal);
@@ -37,7 +38,7 @@ export async function request(
         redirect: 'error',
         referrerPolicy: 'no-referrer',
       });
-      return await readResponse(response);
+      return await readResponse(response, decode);
     } catch (error) {
       cancelled(signal);
       const failure = transportError(error);

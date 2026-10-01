@@ -21,7 +21,12 @@ export function str(value: unknown): string {
   return String(value);
 }
 
-export async function readResponse(response: Response): Promise<unknown> {
+export type ResponseDecoder = (response: Response) => Promise<unknown>;
+
+export async function readResponse(
+  response: Response,
+  decode: ResponseDecoder = (value) => value.json(),
+): Promise<unknown> {
   if (response.status === 401 || response.status === 403) {
     throw new IntegrationError(
       'auth',
@@ -42,7 +47,7 @@ export async function readResponse(response: Response): Promise<unknown> {
     );
   }
   try {
-    return await response.json();
+    return await decode(response);
   } catch {
     throw new IntegrationError('invalid', 'Provider returned an unreadable response.');
   }

@@ -14,11 +14,11 @@ export function TariffsPage({ data, update, next }: SessionProps) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const merge = (tariffs: Tariff[]) =>
-    update({
+    update((current) => ({
       tariffs: [
-        ...new Map([...data.tariffs, ...tariffs].map((tariff) => [tariff.id, tariff])).values(),
+        ...new Map([...current.tariffs, ...tariffs].map((tariff) => [tariff.id, tariff])).values(),
       ],
-    });
+    }));
   const apply = (tariff: Tariff) => {
     merge([tariff]);
     if (!data.baselineId) {
