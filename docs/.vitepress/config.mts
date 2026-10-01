@@ -3,6 +3,18 @@ import packageJson from '../../package.json';
 
 const repository = 'https://github.com/aaron-russell/EnergyComparison';
 const version = packageJson.version;
+const referenceSidebar = [
+  {
+    text: 'Reference',
+    items: [
+      { text: 'Adapter contracts', link: '/reference/contracts' },
+      { text: 'Normalized data model', link: '/reference/data-model' },
+      { text: 'Calculations', link: '/calculations' },
+      { text: 'Architecture', link: '/architecture' },
+      { text: 'Tariff JSON schema', link: '/reference/tariff-schema' },
+    ],
+  },
+];
 
 export default defineConfig({
   title: 'Energy Replay',
@@ -21,6 +33,7 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/using-the-app' },
       { text: 'Extend', link: '/guide/adding-an-adapter' },
+      { text: 'Operations', link: '/operations/cloudflare-pages' },
       { text: 'Reference', link: '/reference/contracts' },
       { text: `v${version}`, link: '/versions' },
     ],
@@ -46,18 +59,9 @@ export default defineConfig({
           ],
         },
       ],
-      '/reference/': [
-        {
-          text: 'Reference',
-          items: [
-            { text: 'Adapter contracts', link: '/reference/contracts' },
-            { text: 'Normalized data model', link: '/reference/data-model' },
-            { text: 'Calculations', link: '/calculations' },
-            { text: 'Architecture', link: '/architecture' },
-            { text: 'Tariff JSON schema', link: '/reference/tariff-schema' },
-          ],
-        },
-      ],
+      '/reference/': referenceSidebar,
+      '/calculations': referenceSidebar,
+      '/architecture': referenceSidebar,
       '/operations/': [
         {
           text: 'Operations',

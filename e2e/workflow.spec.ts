@@ -13,6 +13,38 @@ test('combined production build serves the app and handbook', async ({ page }) =
   await page.goto('/docs/');
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.getByRole('button', { name: 'Search' }).click();
+  const search = page.getByRole('searchbox');
+  await expect(search).toBeVisible();
+  await search.fill('Tariffs and comparison');
+  await expect(
+    page.getByRole('link', { name: 'Tariffs and comparison', exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/docs/calculations.html');
+  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await page.getByRole('link', { name: 'Architecture', exact: true }).click();
+  await expect(page).toHaveURL(/\/docs\/architecture\.html$/);
+  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await page.goto('/docs/');
   await page.getByRole('link', { name: 'Use the app' }).click();
   await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
   await expect(page.locator('h1#use-the-app')).toBeVisible();

@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = resolve(new URL('..', import.meta.url).pathname);
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const docs = join(root, 'docs');
 const markdown = [];
 
