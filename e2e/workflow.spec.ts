@@ -22,6 +22,20 @@ test('combined production build serves the app and handbook', async ({ page }) =
   expect(appResponse.headers()['content-security-policy']).not.toMatch(
     /script-src[^;]*'unsafe-inline'/,
   );
+  expect(appResponse.headers()['link']).toContain('</sitemap.xml>; rel="sitemap"');
+  const robotsResponse = await page.request.get('/robots.txt');
+  expect(robotsResponse.status()).toBe(200);
+  expect(robotsResponse.headers()['content-type']).toMatch(/^text\/plain/);
+  expect(await robotsResponse.text()).toContain(
+    'Sitemap: https://energy.russell-tech.co.uk/sitemap.xml',
+  );
+  const sitemapResponse = await page.request.get('/sitemap.xml');
+  expect(sitemapResponse.status()).toBe(200);
+  expect(sitemapResponse.headers()['content-type']).toMatch(/xml/);
+  expect(await sitemapResponse.text()).toContain('<loc>https://energy.russell-tech.co.uk/</loc>');
+  expect(await sitemapResponse.text()).toContain(
+    '<loc>https://energy.russell-tech.co.uk/docs/</loc>',
+  );
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
