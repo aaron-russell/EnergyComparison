@@ -7,7 +7,7 @@ const headerBlocks = readFileSync(new URL('./public/_headers', import.meta.url),
   .split(/\n\s*\n/)
   .map((block) => {
     const lines = block.split('\n');
-    const path = lines[0] === '/*' || lines[0].startsWith('  ') ? '/' : lines[0].replace(/\*$/, '');
+    const path = lines[0] === '/*' ? '/*' : lines[0].replace(/\*$/, '') || '/';
     const headers = Object.fromEntries(
       lines
         .filter((line) => line.startsWith('  '))
@@ -19,10 +19,13 @@ const headerBlocks = readFileSync(new URL('./public/_headers', import.meta.url),
     return { path, headers };
   });
 
-const headersFor = (path: string) =>
-  headerBlocks.find((block) => block.path !== '/' && path.startsWith(block.path))?.headers ??
-  headerBlocks.find((block) => block.path === '/')?.headers ??
-  {};
+const headersFor = (path: string) => {
+  const common = headerBlocks.find((block) => block.path === '/*')?.headers ?? {};
+  const specific = headerBlocks.find(
+    (block) => block.path !== '/*' && path.startsWith(block.path),
+  )?.headers;
+  return { ...common, ...specific };
+};
 
 const docsHeaders = { ...headersFor('/docs/') };
 try {
