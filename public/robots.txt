@@ -4,6 +4,7 @@ Allow: /
 Disallow: /api/
 Disallow: /_next/
 Disallow: /node_modules/
+Content-Signal: ai-train=no, search=yes, ai-input=yes
 
 # Search crawlers may use the public app and documentation in answers.
 User-agent: OAI-SearchBot
@@ -24,8 +25,5 @@ Disallow: /
 
 User-agent: Google-Extended
 Disallow: /
-
-# Content Signals: permit search and agent input, but not model training.
-Content-Signal: ai-train=no, search=yes, ai-input=yes
 
 Sitemap: https://energy.russell-tech.co.uk/sitemap.xml

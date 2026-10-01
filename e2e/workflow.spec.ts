@@ -26,9 +26,12 @@ test('combined production build serves the app and handbook', async ({ page }) =
   const robotsResponse = await page.request.get('/robots.txt');
   expect(robotsResponse.status()).toBe(200);
   expect(robotsResponse.headers()['content-type']).toMatch(/^text\/plain/);
-  expect(await robotsResponse.text()).toContain(
-    'Sitemap: https://energy.russell-tech.co.uk/sitemap.xml',
+  const robots = await robotsResponse.text();
+  expect(robots).toContain('Content-Signal: ai-train=no, search=yes, ai-input=yes');
+  expect(robots.indexOf('Content-Signal:')).toBeLessThan(
+    robots.indexOf('User-agent: OAI-SearchBot'),
   );
+  expect(robots).toContain('Sitemap: https://energy.russell-tech.co.uk/sitemap.xml');
   const sitemapResponse = await page.request.get('/sitemap.xml');
   expect(sitemapResponse.status()).toBe(200);
   expect(sitemapResponse.headers()['content-type']).toMatch(/xml/);
