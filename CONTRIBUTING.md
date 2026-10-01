@@ -2,6 +2,9 @@
 
 Use Node.js 24 and npm. Install with `npm ci` and start the app with `npm run dev`.
 
+The full contributor handbook is available in [docs/guide/development.md](docs/guide/development.md).
+Run `npm run docs:dev` to work on the generated handbook locally; it is published under `/docs/`.
+
 ## Code quality
 
 - `npm run format` applies Prettier to source, configuration and documentation.
@@ -9,6 +12,7 @@ Use Node.js 24 and npm. Install with `npm ci` and start the app with `npm run de
 - `npm run lint` runs oxlint (type-aware) for TypeScript and React, including Hooks rules.
 - `npm run lint:fix` applies safe automatic lint fixes.
 - `npm run check` runs formatting, linting, type checking, unit tests and a production build.
+- `npm run docs:check` builds and validates the documentation handbook.
 - `npm run test:e2e` runs browser workflows separately.
 
 Use descriptive names, small functions and explicit error states. Separate parsing, validation,

@@ -1,18 +1,62 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-const headers = Object.fromEntries(
-  readFileSync(new URL('./public/_headers', import.meta.url), 'utf8')
-    .split('\n')
-    .filter((line) => line.startsWith('  '))
-    .map((line) => {
-      const separator = line.indexOf(':');
-      return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
-    }),
-);
+
+const headerBlocks = readFileSync(new URL('./public/_headers', import.meta.url), 'utf8')
+  .split(/\n\s*\n/)
+  .map((block) => {
+    const lines = block.split('\n');
+    const path = lines[0] === '/*' ? '/*' : lines[0].replace(/\*$/, '') || '/';
+    const headers = Object.fromEntries(
+      lines
+        .filter((line) => line.startsWith('  '))
+        .map((line) => {
+          const separator = line.indexOf(':');
+          return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+        }),
+    );
+    return { path, headers };
+  });
+
+const headersFor = (path: string) => {
+  const common = headerBlocks.find((block) => block.path === '/*')?.headers ?? {};
+  const specific = headerBlocks
+    .filter((block) => block.path !== '/*' && path.startsWith(block.path))
+    .sort((left, right) => right.path.length - left.path.length)[0]?.headers;
+  return { ...common, ...specific };
+};
+
+const docsHeaders = { ...headersFor('/docs/') };
+try {
+  const docsHtml = readFileSync(new URL('./dist/docs/index.html', import.meta.url), 'utf8');
+  const hashes = [...docsHtml.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/gi)].map(
+    ([, script]) => `'sha256-${createHash('sha256').update(script).digest('base64')}'`,
+  );
+  docsHeaders['Content-Security-Policy'] = docsHeaders['Content-Security-Policy'].replace(
+    "script-src 'self'",
+    `script-src 'self' ${hashes.join(' ')}`,
+  );
+} catch {
+  // The docs build is optional for the app-only development server.
+}
+
 export default defineConfig({
-  preview: { headers },
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'path-aware-preview-headers',
+      configurePreviewServer(server) {
+        server.middlewares.use((request, response, next) => {
+          const headers = request.url?.startsWith('/docs') ? docsHeaders : headersFor('/');
+          Object.entries(headers).forEach(([name, value]) => {
+            response.setHeader(name, value);
+          });
+          next();
+        });
+      },
+    },
+  ],
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
     environment: 'jsdom',

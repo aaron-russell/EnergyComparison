@@ -4,6 +4,73 @@ import { exampleTariffs, syntheticReadings, syntheticSupplies } from '../src/fix
 import { replay } from '../src/core/engine';
 import { midnight } from '../src/core/time';
 
+test('combined production build serves the app and handbook', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('energy-replay:theme')) {
+      localStorage.setItem('energy-replay:theme', 'dark');
+    }
+  });
+  await page.goto('/docs/');
+  const docsResponse = await page.request.get('/docs/');
+  const docsCsp = docsResponse.headers()['content-security-policy'];
+  expect(docsCsp).toContain("script-src 'self'");
+  expect(docsCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  expect(docsResponse.headers()['referrer-policy']).toBe('no-referrer');
+  expect(docsResponse.headers()['x-content-type-options']).toBe('nosniff');
+  expect(docsResponse.headers()['cross-origin-opener-policy']).toBe('same-origin');
+  const appResponse = await page.request.get('/');
+  expect(appResponse.headers()['content-security-policy']).not.toMatch(
+    /script-src[^;]*'unsafe-inline'/,
+  );
+  await expect(page.locator('h1').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.getByRole('button', { name: 'Search' }).click();
+  const search = page.locator('#localsearch-input');
+  await expect(search).toBeVisible();
+  await search.fill('Tariffs and comparison');
+  await expect(
+    page.getByRole('link', { name: 'Tariffs and comparison', exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/docs/calculations.html');
+  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await page.getByRole('link', { name: 'Architecture', exact: true }).click();
+  await expect(page).toHaveURL(/\/docs\/architecture\.html$/);
+  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await page.goto('/docs/');
+  await page.getByRole('link', { name: 'Use the app' }).click();
+  await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
+  await expect(page.locator('h1#use-the-app')).toBeVisible();
+  await page.evaluate(() => localStorage.setItem('energy-replay:theme', 'light'));
+  await page.reload();
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  const nested = await page.request.get('/docs/guide/adding-an-ev-charger.html');
+  expect(nested.ok()).toBe(true);
+  expect(await nested.text()).toContain('Add an EV charger');
+  const asset = await page.request.get('/docs/logo.svg');
+  expect(asset.ok()).toBe(true);
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});
+
 async function syntheticImport(page: Page) {
   await page.goto('/');
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');

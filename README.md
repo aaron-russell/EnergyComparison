@@ -4,6 +4,8 @@ A private React + TypeScript tool for replaying UK household consumption against
 energy tariffs. Built with Vite and npm for Cloudflare Pages, with an alternative Workers Static
 Assets configuration. Historical replay is **not a prediction or guarantee of future savings**.
 
+Live app: [energy.russell-tech.co.uk](https://energy.russell-tech.co.uk/) · [Documentation](https://energy.russell-tech.co.uk/docs/)
+
 ## What it does
 
 Energy Replay replays measured UK electricity and gas consumption against tariff definitions you
@@ -81,15 +83,13 @@ Generated validator code is exempt from hand-authored-code style/complexity rule
 
 ## Documentation
 
-- [Architecture and complexity boundaries](docs/architecture.md)
-- [Calculation assumptions](docs/calculations.md)
-- [Adapters and extension checklist](docs/adapters.md)
-- [Privacy](docs/privacy.md) and [security](SECURITY.md)
-- [Cloudflare Pages deployment](docs/cloudflare-pages.md)
-- [Workers Static Assets alternative](docs/cloudflare-workers.md)
-- [Live release checks](docs/release-checks.md)
-- [Contributing](CONTRIBUTING.md)
-- [Tariff JSON Schema](public/tariff.schema.json)
+The complete versioned handbook is built from Markdown and published at `/docs/` in the deployed app.
+Start with the [user guide](docs/guide/using-the-app.md), [development workflow](docs/guide/development.md),
+[energy adapter guide](docs/guide/adding-an-adapter.md), or [EV charger guide](docs/guide/adding-an-ev-charger.md).
+
+Reference pages cover the [adapter contracts](docs/reference/contracts.md), [normalized data model](docs/reference/data-model.md),
+[calculations](docs/calculations.md), [architecture](docs/architecture.md), [privacy](docs/privacy.md),
+[deployment](docs/operations/cloudflare-pages.md), and [release checks](docs/operations/release-checks.md).
 
 Only explicitly saved tariffs and the theme preference persist. Exports contain tariffs only.
 Refresh, page exit and Clear session dispose of imports, credentials, connections and workers.
