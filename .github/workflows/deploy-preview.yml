@@ -9,12 +9,17 @@ permissions:
   actions: read
   contents: read
 
+concurrency:
+  group: cloudflare-pages-preview-${{ github.event.workflow_run.pull_requests[0].number || 'none' }}
+  cancel-in-progress: true
+
 jobs:
   preview:
     name: Deploy PR preview
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.actor.login != 'dependabot[bot]' &&
       github.event.workflow_run.pull_requests[0].number != null
     permissions:
       actions: read
