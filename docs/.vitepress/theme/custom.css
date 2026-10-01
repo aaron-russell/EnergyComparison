@@ -1,3 +1,39 @@
+.VPSwitchAppearance {
+  display: none !important;
+}
+
+:root {
+  --vp-c-bg: #f4f2f1;
+  --vp-c-bg-alt: #fdfcfb;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-bg-soft: #f6f3f2;
+  --vp-c-text-1: #29242b;
+  --vp-c-text-2: #69616d;
+  --vp-c-text-3: #69616d;
+  --vp-c-divider: #ded8d8;
+  --vp-c-gutter: #ded8d8;
+  --vp-c-brand-1: #974a33;
+  --vp-c-brand-2: #a53d73;
+  --vp-c-brand-3: #c75582;
+  --vp-c-brand-soft: #f8ece6;
+}
+
+.dark {
+  --vp-c-bg: #151518;
+  --vp-c-bg-alt: #19191d;
+  --vp-c-bg-elv: #1e1e23;
+  --vp-c-bg-soft: #26262d;
+  --vp-c-text-1: #f2f0f3;
+  --vp-c-text-2: #aaa7b4;
+  --vp-c-text-3: #aaa7b4;
+  --vp-c-divider: #34343c;
+  --vp-c-gutter: #34343c;
+  --vp-c-brand-1: #e89d83;
+  --vp-c-brand-2: #eeae91;
+  --vp-c-brand-3: #c75582;
+  --vp-c-brand-soft: #36272d;
+}
+
 .VPNavBarTitle .title {
   font-weight: 700;
 }

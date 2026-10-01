@@ -5,10 +5,21 @@ import { replay } from '../src/core/engine';
 import { midnight } from '../src/core/time';
 
 test('combined production build serves the app and handbook', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('energy-replay:theme')) {
+      localStorage.setItem('energy-replay:theme', 'dark');
+    }
+  });
   await page.goto('/docs/');
-  await expect(page.getByRole('heading', { name: 'Energy Replay' }).first()).toBeVisible();
-  await expect(page.locator('a[href="/docs/guide/using-the-app"]').first()).toBeVisible();
-  const nested = await page.request.get('/docs/guide/adding-an-ev-charger');
+  await expect(page.locator('h1').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
+  await page.getByRole('link', { name: 'Use the app' }).click();
+  await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
+  await expect(page.locator('h1#use-the-app')).toBeVisible();
+  await page.evaluate(() => localStorage.setItem('energy-replay:theme', 'light'));
+  await page.reload();
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  const nested = await page.request.get('/docs/guide/adding-an-ev-charger.html');
   expect(nested.ok()).toBe(true);
   expect(await nested.text()).toContain('Add an EV charger');
   const asset = await page.request.get('/docs/logo.svg');

@@ -8,11 +8,15 @@ export default defineConfig({
   title: 'Energy Replay',
   description: 'Documentation for the Energy Replay historical tariff comparison tool.',
   base: '/docs/',
-  cleanUrls: true,
+  cleanUrls: false,
   lastUpdated: true,
-  appearance: true,
+  appearance: false,
+  locales: {
+    root: { label: 'English', lang: 'en' },
+  },
+  head: [['script', { src: '/docs/theme-sync.js' }]],
   themeConfig: {
-    logo: '/docs/logo.svg',
+    logo: '/logo.svg',
     siteTitle: 'Energy Replay',
     nav: [
       { text: 'Guide', link: '/guide/using-the-app' },
