@@ -110,6 +110,12 @@ describe('Tariff Tracker adapter', () => {
     await expect(fetchTariffs('Yorkshire')).rejects.toMatchObject({ code: 'network' });
   });
 
+  it('rejects malformed freshness timestamps', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({ as_of: 'unknown', rows: [row()] })));
+
+    await expect(fetchTariffs('Yorkshire')).rejects.toThrow('malformed freshness data');
+  });
+
   it('preserves upstream numeric tokens and validates dual-fuel rates and mapped tariffs', async () => {
     const body = `{"rows":[{"supplier":"Test Energy","tariff":"Precise","product_code":"PRECISE","region":"Yorkshire","fuel":"electricity","kind":"fixed","payment":"direct debit","unit_p_kwh":25.123456789012345678901,"standing_p_day":51.000000000000000001,"annual_est_gbp":1200} ]}`;
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body)));

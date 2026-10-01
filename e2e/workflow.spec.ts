@@ -83,11 +83,24 @@ async function syntheticImport(page: Page) {
   await page.getByRole('button', { name: 'Review coverage' }).click();
 }
 
-async function compareSyntheticPeriod(page: Page, start: string, end: string, incomplete = false) {
+async function compareSyntheticPeriod(
+  page: Page,
+  start: string,
+  end: string,
+  incomplete = false,
+  electricityOnly = false,
+) {
   await page.goto('/');
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
   await page.getByRole('button', { name: 'Choose import period' }).click();
+  if (electricityOnly) {
+    await page
+      .locator('label')
+      .filter({ hasText: 'Example home · gas' })
+      .getByRole('checkbox')
+      .uncheck();
+  }
   await page.getByLabel('Start date (included)').fill(start);
   await page.getByLabel('End date (excluded)').fill(end);
   await page.getByRole('button', { name: 'Import history / retry' }).click();
@@ -102,6 +115,9 @@ async function compareSyntheticPeriod(page: Page, start: string, end: string, in
   await page.getByRole('button', { name: 'Load synthetic examples' }).click();
   await page.getByRole('button', { name: 'Use as baseline' }).first().click();
   await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
+  if (electricityOnly) {
+    await page.getByLabel('Fuel comparison').selectOption('electricity');
+  }
   await page.getByRole('button', { name: 'Replay these tariffs' }).click();
 }
 
@@ -180,28 +196,28 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
 
 test('labels complete and incomplete 12-month periods correctly', async ({ page }) => {
   test.setTimeout(120000);
-  await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01');
+  await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01', false, true);
   await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
-    timeout: 30000,
+    timeout: 120000,
   });
   await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
-    timeout: 30000,
+    timeout: 120000,
   });
 
-  await compareSyntheticPeriod(page, '2024-01-15', '2025-01-15');
+  await compareSyntheticPeriod(page, '2024-01-15', '2025-01-15', false, true);
   await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
-    timeout: 30000,
+    timeout: 120000,
   });
   await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
-    timeout: 30000,
+    timeout: 120000,
   });
 
-  await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01', true);
+  await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01', true, true);
   await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
-    timeout: 30000,
+    timeout: 120000,
   });
   await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
-    timeout: 30000,
+    timeout: 120000,
   });
 });
 

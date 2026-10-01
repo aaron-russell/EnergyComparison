@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import Decimal from '../core/decimal';
 import { validateTariff } from '../core/tariff';
 import type { Tariff, DecimalString } from '../core/types';
@@ -175,7 +176,7 @@ function parseEnvelope(value: unknown): Envelope {
   if (!isRecord(value) || !Array.isArray(value.rows) || !value.rows.every(isRow)) {
     throw new Error('Tariff Tracker returned malformed tariff data.');
   }
-  if (value.as_of !== undefined && typeof value.as_of !== 'string') {
+  if (value.as_of !== undefined && !isTimestamp(value.as_of)) {
     throw new Error('Tariff Tracker returned malformed freshness data.');
   }
   if (
@@ -185,6 +186,21 @@ function parseEnvelope(value: unknown): Envelope {
     throw new Error('Tariff Tracker returned malformed caveats.');
   }
   return value as unknown as Envelope;
+}
+
+function isTimestamp(value: unknown): value is string {
+  if (
+    typeof value !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value)
+  ) {
+    return false;
+  }
+  try {
+    Temporal.Instant.from(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function parseLookup(value: unknown): TariffTrackerLookup {

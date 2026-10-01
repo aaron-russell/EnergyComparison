@@ -39,8 +39,10 @@ export function dates(period: Period): string[] {
 }
 export function slots(period: Period): Period[] {
   const out: Period[] = [];
-  for (let t = ms(period.start); t < ms(period.end); t += HALF_HOUR) {
-    out.push({ start: utc(t), end: utc(Math.min(t + HALF_HOUR, ms(period.end))) });
+  const start = ms(period.start);
+  const end = ms(period.end);
+  for (let t = start; t < end; t += HALF_HOUR) {
+    out.push({ start: utc(t), end: utc(Math.min(t + HALF_HOUR, end)) });
   }
   return out;
 }
