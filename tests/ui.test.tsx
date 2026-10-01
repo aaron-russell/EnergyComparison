@@ -327,6 +327,8 @@ describe('page journeys', () => {
     );
     fireEvent.change(screen.getByLabelText('Charger power (kW)'), { target: { value: 'invalid' } });
     fireEvent.click(screen.getByRole('button', { name: 'Suggest sessions from usage' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid charger power.');
+    expect(update).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Continue to tariffs' }));
     expect(next).toHaveBeenCalled();
   });

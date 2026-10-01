@@ -34,6 +34,7 @@ const preview: ChargingPreview = { sessions: [], mapping: [], notices: [] };
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   localStorage.clear();
 });
 
@@ -76,6 +77,7 @@ describe('replay state and tariff persistence', () => {
     expect(savedTariffs()[0].name).toBe('Updated');
     deleteSavedTariff(tariff.id);
     expect(savedTariffs()).toEqual([]);
+    vi.stubGlobal('URL', { createObjectURL: vi.fn(), revokeObjectURL: vi.fn() });
     const create = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
