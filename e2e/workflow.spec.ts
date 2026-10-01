@@ -11,6 +11,14 @@ test('combined production build serves the app and handbook', async ({ page }) =
     }
   });
   await page.goto('/docs/');
+  const docsResponse = await page.request.get('/docs/');
+  const docsCsp = docsResponse.headers()['content-security-policy'];
+  expect(docsCsp).toContain("script-src 'self'");
+  expect(docsCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  const appResponse = await page.request.get('/');
+  expect(appResponse.headers()['content-security-policy']).not.toMatch(
+    /script-src[^;]*'unsafe-inline'/,
+  );
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
@@ -22,7 +30,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
     ).violations,
   ).toEqual([]);
   await page.getByRole('button', { name: 'Search' }).click();
-  const search = page.getByRole('searchbox');
+  const search = page.locator('#localsearch-input');
   await expect(search).toBeVisible();
   await search.fill('Tariffs and comparison');
   await expect(

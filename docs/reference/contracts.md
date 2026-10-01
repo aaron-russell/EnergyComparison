@@ -1,7 +1,7 @@
 # Adapter contracts
 
 These TypeScript interfaces are the supported extension boundary. Source links point to the current
-branch definitions in [`src/adapters/contracts.ts`](https://github.com/aaron-russell/EnergyComparison/blob/main/src/adapters/contracts.ts).
+branch definitions in [`src/adapters/contracts.ts`](https://github.com/aaron-russell/EnergyComparison/blob/main/src/adapters/contracts.ts). The source link intentionally targets the repository's default branch; use the local file for the exact revision under review.
 
 ## Shared operation types
 

@@ -10,7 +10,7 @@
     "dev": "vite --host 127.0.0.1",
     "build:app": "tsc -b && vite build",
     "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs --outDir dist/docs",
+    "docs:build": "vitepress build docs --outDir dist/docs && node scripts/update-docs-csp.mjs",
     "docs:check": "npm run docs:build && node scripts/check-docs.mjs",
     "build": "npm run build:app && npm run docs:build",
     "typecheck": "tsc -b",
