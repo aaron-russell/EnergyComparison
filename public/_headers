@@ -3,6 +3,7 @@
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
+  Link: </sitemap.xml>; rel="sitemap", </docs/>; rel="service-doc"
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Cross-Origin-Opener-Policy: same-origin
   Cache-Control: no-store

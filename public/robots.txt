@@ -1,0 +1,29 @@
+# Energy Replay is a public static application and handbook.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /node_modules/
+Content-Signal: ai-train=no, search=yes, ai-input=yes
+
+# Search crawlers may use the public app and documentation in answers.
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Do not use this site as a model-training corpus.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+Sitemap: https://energy.russell-tech.co.uk/sitemap.xml
