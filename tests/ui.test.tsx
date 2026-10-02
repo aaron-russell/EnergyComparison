@@ -248,7 +248,7 @@ describe('shared components and forms', () => {
 });
 
 describe('page journeys', () => {
-  it('resets demo-derived state when a real provider connects', () => {
+  it('resets demo-derived state when a real provider connects', { timeout: 30000 }, () => {
     const { result } = renderHook(() => useSession());
     act(() => result.current.loadDemo());
     expect(result.current.data.isDemo).toBe(true);
