@@ -92,7 +92,7 @@ function CoverageTable({
   changeBill: (row: CoverageRow, value: string) => void;
 }) {
   return (
-    <div className="table-scroll">
+    <div className="table-scroll" tabIndex={0}>
       <table>
         <caption>Observed coverage and optional monthly energy totals</caption>
         <thead>

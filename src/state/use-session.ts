@@ -3,6 +3,12 @@ import type { EnergyConnection } from '../adapters/contracts';
 import { previousYear } from '../core/time';
 import { savedTariffs } from './tariff-storage';
 import type { SessionData } from './session';
+import {
+  syntheticCharging,
+  syntheticReadings,
+  syntheticSupplies,
+  exampleTariffs,
+} from '../fixtures/synthetic';
 
 export function useSession() {
   const [connection, setConnection] = useState<EnergyConnection | null>(null);
@@ -15,6 +21,7 @@ export function useSession() {
     estimated: null,
     tariffs: savedTariffs(),
     baselineId: '',
+    isDemo: false,
   }));
   useEffect(() => () => connection?.disconnect(), [connection]);
   const update = (patch: Partial<SessionData> | ((current: SessionData) => Partial<SessionData>)) =>
@@ -24,7 +31,36 @@ export function useSession() {
     }));
   const connected = (next: EnergyConnection) => {
     setConnection(next);
-    update({ supplies: next.supplies });
+    if (data.isDemo) {
+      update({
+        period: previousYear(),
+        supplies: next.supplies,
+        readings: [],
+        conflicts: 0,
+        charging: [],
+        estimated: null,
+        tariffs: savedTariffs(),
+        baselineId: '',
+        isDemo: false,
+      });
+      return;
+    }
+    update({ supplies: next.supplies, isDemo: false });
   };
-  return { data, update, connection, connected };
+  const loadDemo = () => {
+    const period = previousYear();
+    setConnection(null);
+    update({
+      period,
+      supplies: syntheticSupplies,
+      readings: syntheticReadings(period),
+      conflicts: 0,
+      charging: syntheticCharging(period),
+      estimated: null,
+      tariffs: structuredClone(exampleTariffs),
+      baselineId: exampleTariffs[0].id,
+      isDemo: true,
+    });
+  };
+  return { data, update, connection, connected, loadDemo };
 }

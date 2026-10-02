@@ -218,6 +218,29 @@ async function compareSyntheticPeriod(
   await page.getByRole('button', { name: 'Replay these tariffs' }).click();
 }
 
+test('loads the complete demo workspace and renders the visual comparison dashboard', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load complete demo' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole('heading', { name: 'Same usage. Different possibilities.' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await expect(page.getByText('Demo data', { exact: true })).toBeVisible();
+  await expect(page.getByRole('img', { name: /Monthly cost comparison/ })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByRole('img', { name: 'Monthly difference from baseline' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByText('Usage mix', { exact: true })).toBeVisible({ timeout: 30000 });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('manual replacement meters connect as one supply without account discovery', async ({
   page,
 }) => {
