@@ -1,3 +1,8 @@
+---
+title: Deploy to Cloudflare Pages | Energy Replay
+description: Build, preview and release the Energy Replay application and handbook on Cloudflare Pages.
+---
+
 # Deploy to Cloudflare Pages
 
 The existing GitHub Actions deployment builds the React application and VitePress handbook together,

@@ -1,3 +1,8 @@
+---
+title: Workers Static Assets alternative | Energy Replay
+description: Use Workers Static Assets as the documented alternative deployment target for Energy Replay.
+---
+
 # Workers Static Assets alternative
 
 The repository also contains `wrangler.workers.jsonc` for serving the built `dist` directory as Workers

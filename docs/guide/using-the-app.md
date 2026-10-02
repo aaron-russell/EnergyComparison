@@ -1,3 +1,8 @@
+---
+title: Use the app | Energy Replay
+description: Follow the six-step Energy Replay journey from connecting usage through comparing tariffs.
+---
+
 # Use the app
 
 Energy Replay is a browser-based historical replay tool. It does not predict future bills, fetch a
