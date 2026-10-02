@@ -70,6 +70,55 @@ test('combined production build serves the app and handbook', async ({ page }) =
   expect(await sitemapResponse.text()).toContain(
     '<loc>https://energy.russell-tech.co.uk/docs/</loc>',
   );
+  const sitemapUrls = await page.evaluate(
+    (xml) => {
+      const document = new DOMParser().parseFromString(xml, 'application/xml');
+      if (document.querySelector('parsererror')) return null;
+      return [...document.querySelectorAll('urlset > url > loc')].map((node) => node.textContent);
+    },
+    await sitemapResponse.text(),
+  );
+  const expectedSitemapUrls = [
+    '/',
+    '/docs/',
+    '/docs/architecture.html',
+    '/docs/calculations.html',
+    '/docs/guide/adding-an-adapter.html',
+    '/docs/guide/adding-an-ev-charger.html',
+    '/docs/guide/connection-and-import.html',
+    '/docs/guide/coverage-and-estimates.html',
+    '/docs/guide/development.html',
+    '/docs/guide/ev-charging.html',
+    '/docs/guide/tariffs-and-comparison.html',
+    '/docs/guide/troubleshooting.html',
+    '/docs/guide/using-the-app.html',
+    '/docs/operations/cloudflare-pages.html',
+    '/docs/operations/cloudflare-workers.html',
+    '/docs/operations/privacy-and-security.html',
+    '/docs/operations/release-checks.html',
+    '/docs/reference/contracts.html',
+    '/docs/reference/data-model.html',
+    '/docs/reference/tariff-schema.html',
+    '/docs/versions.html',
+  ].map((path) => new URL(path, 'https://energy.russell-tech.co.uk').href);
+  expect(sitemapUrls).toEqual(expectedSitemapUrls);
+  expect(new Set(sitemapUrls ?? []).size).toBe(expectedSitemapUrls.length);
+  for (const url of expectedSitemapUrls) {
+    expect((await page.request.get(new URL(url).pathname)).status()).toBe(200);
+  }
+  const missingResponse = await page.request.get('/this-page-does-not-exist');
+  expect(missingResponse.status()).toBe(404);
+  expect(missingResponse.headers()['content-type']).toMatch(/^text\/html(?:;|$)/);
+  expect(await missingResponse.text()).toContain('<h1>Page not found</h1>');
+  for (const legacyPath of [
+    '/docs/adapters.html',
+    '/docs/cloudflare-pages.html',
+    '/docs/cloudflare-workers.html',
+    '/docs/release-checks.html',
+    '/docs/privacy.html',
+  ]) {
+    expect((await page.request.get(legacyPath)).status()).toBe(200);
+  }
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
