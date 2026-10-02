@@ -693,8 +693,14 @@ dd {
   color: white;
   font-size: 12px;
   font-weight: 650;
-  min-width: 110px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   transition: width 0.25s ease;
+}
+.usage-bar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .usage-bar.electricity {
   background: linear-gradient(110deg, #a74426, #c75582);

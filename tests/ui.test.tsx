@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App';
 import { ChargingPage } from '../src/pages/Charging';
@@ -28,6 +28,7 @@ import { replay } from '../src/core/engine';
 import type { Charging, Period, Reading, ReplayResult } from '../src/core/types';
 import type { EnergyConnection } from '../src/adapters/contracts';
 import type { SessionData, SessionProps } from '../src/state/session';
+import { useSession } from '../src/state/use-session';
 
 const period: Period = { start: midnight('2024-03-01'), end: midnight('2024-04-01') };
 const electricity = syntheticSupplies[0];
@@ -247,6 +248,18 @@ describe('shared components and forms', () => {
 });
 
 describe('page journeys', () => {
+  it('resets demo-derived state when a real provider connects', () => {
+    const { result } = renderHook(() => useSession());
+    act(() => result.current.loadDemo());
+    expect(result.current.data.isDemo).toBe(true);
+    expect(result.current.data.readings.length).toBeGreaterThan(0);
+    act(() => result.current.connected(connection));
+    expect(result.current.data.isDemo).toBe(false);
+    expect(result.current.data.readings).toEqual([]);
+    expect(result.current.data.charging).toEqual([]);
+    expect(result.current.data.baselineId).toBe('');
+  });
+
   it('disconnects a provider result that arrives after the connection was aborted', async () => {
     const connected = vi.fn();
     const disconnect = vi.fn();
@@ -332,7 +345,7 @@ describe('page journeys', () => {
     const next = vi.fn();
     render(
       <ChargingPage
-        {...props({ readings: syntheticReadings(period), charging: [] })}
+        {...props({ readings: syntheticReadings(period), charging: [], isDemo: true })}
         update={update}
         next={next}
       />,
@@ -341,6 +354,9 @@ describe('page journeys', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Suggest sessions from usage' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a valid charger power.');
     expect(update).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Charger power (kW)'), { target: { value: '7' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Suggest sessions from usage' }));
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ isDemo: false }));
     fireEvent.click(screen.getByRole('button', { name: 'Continue to tariffs' }));
     expect(next).toHaveBeenCalled();
   });

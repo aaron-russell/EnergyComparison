@@ -27,6 +27,20 @@ export function useSession() {
   const update = (patch: Partial<SessionData>) => setData((current) => ({ ...current, ...patch }));
   const connected = (next: EnergyConnection) => {
     setConnection(next);
+    if (data.isDemo) {
+      update({
+        period: previousYear(),
+        supplies: next.supplies,
+        readings: [],
+        conflicts: 0,
+        charging: [],
+        estimated: null,
+        tariffs: savedTariffs(),
+        baselineId: '',
+        isDemo: false,
+      });
+      return;
+    }
     update({ supplies: next.supplies, isDemo: false });
   };
   const loadDemo = () => {

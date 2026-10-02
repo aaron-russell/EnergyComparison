@@ -48,9 +48,10 @@ function Dashboard({
     new Decimal(result.total).lessThan(best.total) ? result : best,
   );
   const saving = new Decimal(baseline.total).sub(cheapest.total);
+  const baselineMagnitude = new Decimal(baseline.total).abs();
   const savingPercent = new Decimal(baseline.total).isZero()
     ? '0'
-    : saving.div(baseline.total).times(100).toFixed(1);
+    : saving.div(baselineMagnitude).times(100).toFixed(1);
   return (
     <>
       <section className="dashboard-heading">
