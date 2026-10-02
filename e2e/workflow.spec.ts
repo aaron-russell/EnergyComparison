@@ -5,15 +5,27 @@ import { replay } from '../src/core/engine';
 import { midnight } from '../src/core/time';
 
 test('combined production build serves the app and handbook', async ({ page }) => {
+  const docsErrors: string[] = [];
+  page.on('pageerror', (error) => docsErrors.push(error.message));
   await page.addInitScript(() => {
     if (!localStorage.getItem('energy-replay:theme')) {
       localStorage.setItem('energy-replay:theme', 'dark');
     }
   });
+  await page.goto('/docs/guide/using-the-app');
+  await expect(page.locator('h1#use-the-app')).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      Object.keys(
+        (window as unknown as { __VP_SITE_DATA__: { locales: object } }).__VP_SITE_DATA__.locales,
+      ),
+    ),
+  ).toContain('root');
   await page.goto('/docs/');
   const docsResponse = await page.request.get('/docs/');
   const docsCsp = docsResponse.headers()['content-security-policy'];
   expect(docsCsp).toContain("script-src 'self'");
+  expect(docsCsp).toMatch(/script-src[^;]*'sha256-/);
   expect(docsCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
   expect(docsResponse.headers()['referrer-policy']).toBe('no-referrer');
   expect(docsResponse.headers()['x-content-type-options']).toBe('nosniff');
@@ -59,9 +71,19 @@ test('combined production build serves the app and handbook', async ({ page }) =
   await page.getByRole('link', { name: 'Use the app' }).click();
   await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
   await expect(page.locator('h1#use-the-app')).toBeVisible();
+  await page.getByRole('link', { name: 'Connect and import history', exact: true }).click();
+  await expect(page).toHaveURL(/\/docs\/guide\/connection-and-import\.html$/);
+  await expect(page.locator('h1')).toContainText('Connect and import history');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
+  await expect(page.locator('h1#use-the-app')).toBeVisible();
+  await page.goForward();
+  await expect(page).toHaveURL(/\/docs\/guide\/connection-and-import\.html$/);
+  await expect(page.locator('h1')).toContainText('Connect and import history');
   await page.evaluate(() => localStorage.setItem('energy-replay:theme', 'light'));
   await page.reload();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
+  expect(docsErrors).toEqual([]);
   const nested = await page.request.get('/docs/guide/adding-an-ev-charger.html');
   expect(nested.ok()).toBe(true);
   expect(await nested.text()).toContain('Add an EV charger');
