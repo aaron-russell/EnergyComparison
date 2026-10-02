@@ -82,6 +82,12 @@ export function Shell({ step, navigate, reset, theme, toggleTheme, children, con
         <footer>
           Historical replay. No guaranteed future savings.{' '}
           <span>Built for a more informed choice.</span>
+          <nav className="footer-links" aria-label="Project links">
+            <a href="/docs/about.html">About</a>
+            <a href="/docs/projects/energy-replay.html">Project</a>
+            <a href="/docs/privacy.html">Privacy</a>
+            <a href="/docs/contact.html">Contact</a>
+          </nav>
         </footer>
       </div>
     </div>
