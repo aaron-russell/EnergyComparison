@@ -3,7 +3,12 @@ import packageJson from '../../package.json';
 import { buildJsonLd, canonicalUrl, jsonLdScript, SOCIAL_IMAGE_URL } from '../../src/seo';
 
 const repository = 'https://github.com/aaron-russell/EnergyComparison';
+const site = 'https://energy.russell-tech.co.uk';
+const authorWebsite = 'https://aaron-russell.co.uk';
+const organizationWebsite = 'https://russell-tech.co.uk';
 const version = packageJson.version;
+const authorId = `${site}/docs/about.html#aaron-russell`;
+const organizationId = `${site}/docs/about.html#russell-tech`;
 const referenceSidebar = [
   {
     text: 'Reference',
@@ -37,6 +42,8 @@ export default defineConfig({
       datePublished?: string;
       dateModified?: string;
       author?: string;
+      reviewed?: string;
+      schemaType?: string;
     };
     const relativePath =
       pageData.relativePath === 'index.md'
@@ -64,6 +71,42 @@ export default defineConfig({
         },
       }),
     };
+    const jsonLd = buildJsonLd(metadata) as {
+      '@context': string;
+      '@graph': Record<string, unknown>[];
+    };
+    if (relativePath !== '/docs/') {
+      jsonLd['@graph'].push(
+        {
+          '@type': 'Person',
+          '@id': authorId,
+          name: 'Aaron Russell',
+          url: authorId,
+          sameAs: [repository, authorWebsite],
+        },
+        {
+          '@type': 'Organization',
+          '@id': organizationId,
+          name: 'Russell Tech',
+          url: organizationWebsite,
+        },
+        {
+          '@type': frontmatter.schemaType ?? 'TechArticle',
+          '@id': `${canonicalUrl(path)}#${String(frontmatter.schemaType ?? 'TechArticle').toLowerCase()}`,
+          url: canonicalUrl(path),
+          name: title,
+          description,
+          isPartOf: { '@id': `${site}/docs/#website` },
+          author: { '@id': authorId },
+          publisher: { '@id': organizationId },
+          ...(frontmatter.reviewed
+            ? { dateModified: frontmatter.reviewed }
+            : frontmatter.dateModified
+              ? { dateModified: frontmatter.dateModified }
+              : {}),
+        },
+      );
+    }
     return [
       ['meta', { name: 'description', content: description }],
       ['link', { rel: 'canonical', href: canonicalUrl(path) }],
@@ -79,7 +122,7 @@ export default defineConfig({
       [
         'script',
         { type: 'application/ld+json', 'data-energy-replay-seo': 'jsonld' },
-        jsonLdScript(buildJsonLd(metadata)),
+        jsonLdScript(jsonLd),
       ],
     ];
   },
@@ -89,6 +132,9 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/using-the-app' },
       { text: 'Extend', link: '/guide/adding-an-adapter' },
+      { text: 'About', link: '/about' },
+      { text: 'Projects', link: '/projects/energy-replay' },
+      { text: 'Policies', link: '/editorial-policy' },
       { text: 'Operations', link: '/operations/cloudflare-pages' },
       { text: 'Reference', link: '/reference/contracts' },
       { text: `v${version}`, link: '/versions' },
@@ -128,6 +174,9 @@ export default defineConfig({
             { text: 'Release checks', link: '/operations/release-checks' },
           ],
         },
+      ],
+      '/projects/': [
+        { text: 'Projects', items: [{ text: 'Energy Replay', link: '/projects/energy-replay' }] },
       ],
     },
     socialLinks: [{ icon: 'github', link: repository }],
