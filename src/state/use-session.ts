@@ -24,7 +24,11 @@ export function useSession() {
     isDemo: false,
   }));
   useEffect(() => () => connection?.disconnect(), [connection]);
-  const update = (patch: Partial<SessionData>) => setData((current) => ({ ...current, ...patch }));
+  const update = (patch: Partial<SessionData> | ((current: SessionData) => Partial<SessionData>)) =>
+    setData((current) => ({
+      ...current,
+      ...(typeof patch === 'function' ? patch(current) : patch),
+    }));
   const connected = (next: EnergyConnection) => {
     setConnection(next);
     if (data.isDemo) {

@@ -1,18 +1,19 @@
 import Decimal, { sum } from '../core/decimal';
-import type { ReplayResult, Tariff } from '../core/types';
+import type { Period, ReplayResult, Tariff } from '../core/types';
 
 const currency = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
 const money = (value: string) => currency.format(Number(value));
 const energy = (value: string) => `${Number(value).toFixed(0)} kWh`;
-type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string };
+type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string; period?: Period };
 type ComponentKey = 'electricity' | 'gas' | 'standing' | 'credits' | 'evAdjustment';
 
 export function ReplayResults({ results, tariffs, baselineId }: Props) {
   const baseline = results.find((result) => result.tariffId === baselineId) ?? results[0];
   const names = new Map(tariffs.map((tariff) => [tariff.id, tariff.name]));
+  const annual = results[0].complete && results[0].months.length === 12;
   return (
     <div className="results">
-      <Dashboard results={results} baseline={baseline} names={names} />
+      <Dashboard results={results} baseline={baseline} names={names} annual={annual} />
       <section className="panel">
         <div className="section-title">
           <div>
@@ -20,7 +21,7 @@ export function ReplayResults({ results, tariffs, baselineId }: Props) {
             <p>Identical period, supplies and energy for every tariff.</p>
           </div>
         </div>
-        <ResultsTable results={results} baseline={baseline} names={names} />
+        <ResultsTable results={results} baseline={baseline} names={names} annual={annual} />
       </section>
       <MonthlyChart results={results} names={names} />
       <DifferenceChart results={results} baseline={baseline} names={names} />
@@ -39,10 +40,12 @@ function Dashboard({
   results,
   baseline,
   names,
+  annual,
 }: {
   results: ReplayResult[];
   baseline: ReplayResult;
   names: Map<string, string>;
+  annual: boolean;
 }) {
   const cheapest = results.reduce((best, result) =>
     new Decimal(result.total).lessThan(best.total) ? result : best,
@@ -57,7 +60,7 @@ function Dashboard({
       <section className="dashboard-heading">
         <div>
           <p className="eyebrow">YOUR REPLAY, VISUALISED</p>
-          <h2>What your energy could have cost</h2>
+          <h2>{annual ? 'Annual usage and monthly cost' : 'Usage and cost for this period'}</h2>
           <p className="muted">A month-by-month view of the same usage on each tariff.</p>
         </div>
         <span className="result-period">{baseline.days} local calendar days</span>
@@ -444,10 +447,12 @@ function ResultsTable({
   results,
   baseline,
   names,
+  annual,
 }: {
   results: ReplayResult[];
   baseline: ReplayResult;
   names: Map<string, string>;
+  annual: boolean;
 }) {
   return (
     <div className="table-scroll" tabIndex={0}>
@@ -456,7 +461,7 @@ function ResultsTable({
         <thead>
           <tr>
             <th scope="col">Tariff</th>
-            <th scope="col">Period total</th>
+            <th scope="col">{annual ? 'Annual cost' : 'Period total'}</th>
             <th scope="col">Monthly equivalent</th>
             <th scope="col">Difference from baseline</th>
           </tr>

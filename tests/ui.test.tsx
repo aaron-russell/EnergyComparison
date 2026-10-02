@@ -388,6 +388,61 @@ describe('page journeys', () => {
     expect(update).toHaveBeenCalled();
   });
 
+  it('loads Tariff Tracker tariffs and displays provider caveats', async () => {
+    const update = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: { electricity_region: 'Yorkshire' } })),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              as_of: '2026-10-01T00:00:00Z',
+              caveats: ['Synthetic supplier note'],
+              rows: [
+                {
+                  supplier: 'Test Energy',
+                  tariff: 'Fixed',
+                  product_code: 'TEST',
+                  region: 'Yorkshire',
+                  fuel: 'electricity',
+                  kind: 'fixed',
+                  payment: 'direct debit',
+                  unit_p_kwh: '25',
+                  standing_p_day: '50',
+                  annual_est_gbp: '1000',
+                },
+              ],
+            }),
+          ),
+        ),
+    );
+    render(<TariffsPage data={data({ tariffs: [] })} update={update} next={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Postcode'), { target: { value: 'L1 1AA' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Load tariffs' }));
+    await waitFor(() =>
+      expect(screen.getByText('Loaded 1 tariffs', { exact: false })).toBeVisible(),
+    );
+    expect(screen.getByText('Synthetic supplier note')).toBeVisible();
+    expect(update).toHaveBeenCalled();
+  });
+
+  it('reports missing regions and empty Tariff Tracker catalogues', async () => {
+    render(<TariffsPage data={data({ tariffs: [] })} update={vi.fn()} next={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Load tariffs' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Enter a postcode'));
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ rows: [] }))));
+    fireEvent.change(screen.getByLabelText('Electricity region'), {
+      target: { value: 'Yorkshire' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Load tariffs' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No open tariffs'));
+  });
+
   it('renders compare controls and validation errors', () => {
     render(<ComparePage {...props({ tariffs: [exampleTariffs[0]], baselineId: '' })} />);
     expect(screen.getByRole('button', { name: 'Replay these tariffs' })).toBeDisabled();
