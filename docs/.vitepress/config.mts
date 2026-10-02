@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress';
 import packageJson from '../../package.json';
+import { buildJsonLd, canonicalUrl, jsonLdScript, SOCIAL_IMAGE_URL } from '../../src/seo';
 
 const repository = 'https://github.com/aaron-russell/EnergyComparison';
 const site = 'https://energy.russell-tech.co.uk';
@@ -26,32 +27,56 @@ export default defineConfig({
   description: 'Documentation for the Energy Replay historical tariff comparison tool.',
   base: '/docs/',
   cleanUrls: false,
+  titleTemplate: false,
   lastUpdated: true,
   appearance: false,
   locales: {
     root: { label: 'English', lang: 'en' },
   },
   head: [['script', { src: '/docs/theme-sync.js' }]],
-  transformPageData(pageData) {
-    const reviewed = pageData.frontmatter.reviewed;
-    const schemaType = pageData.frontmatter.schemaType ?? 'TechArticle';
-    if (pageData.relativePath === 'index.md') return;
-
-    const pageUrl = `${site}/docs/${pageData.relativePath.replace(/\.md$/, '.html')}`;
-    const pageSchema = {
-      '@type': schemaType,
-      '@id': `${pageUrl}#${String(schemaType).toLowerCase()}`,
-      url: pageUrl,
-      name: pageData.title,
-      description: pageData.description,
-      isPartOf: { '@id': `${site}/docs/#website` },
-      author: { '@id': authorId },
-      publisher: { '@id': organizationId },
-      ...(reviewed ? { dateModified: reviewed } : {}),
+  transformHead({ pageData }) {
+    const frontmatter = pageData.frontmatter as {
+      canonical?: string;
+      description?: string;
+      article?: boolean;
+      datePublished?: string;
+      dateModified?: string;
+      author?: string;
+      reviewed?: string;
+      schemaType?: string;
     };
-    const schema = {
-      '@context': 'https://schema.org',
-      '@graph': [
+    const relativePath =
+      pageData.relativePath === 'index.md'
+        ? '/docs/'
+        : `/docs/${pageData.relativePath.replace(/\.md$/, '.html')}`;
+    const path = frontmatter.canonical ?? relativePath;
+    const title = pageData.title;
+    const description = frontmatter.description ?? 'Energy Replay documentation.';
+    const breadcrumbs = [
+      { name: 'Energy Replay', path: '/' },
+      { name: 'Documentation', path: '/docs/' },
+      ...(relativePath === '/docs/' ? [] : [{ name: title, path }]),
+    ];
+    const metadata = {
+      title,
+      description,
+      path,
+      breadcrumbs,
+      ...(frontmatter.article && {
+        article: {
+          headline: title,
+          datePublished: frontmatter.datePublished,
+          dateModified: frontmatter.dateModified,
+          author: frontmatter.author,
+        },
+      }),
+    };
+    const jsonLd = buildJsonLd(metadata) as {
+      '@context': string;
+      '@graph': Record<string, unknown>[];
+    };
+    if (relativePath !== '/docs/') {
+      jsonLd['@graph'].push(
         {
           '@type': 'Person',
           '@id': authorId,
@@ -66,19 +91,39 @@ export default defineConfig({
           url: organizationWebsite,
         },
         {
-          '@type': 'WebSite',
-          '@id': `${site}/docs/#website`,
-          url: `${site}/docs/`,
-          name: 'Energy Replay documentation',
+          '@type': frontmatter.schemaType ?? 'TechArticle',
+          '@id': `${canonicalUrl(path)}#${String(frontmatter.schemaType ?? 'TechArticle').toLowerCase()}`,
+          url: canonicalUrl(path),
+          name: title,
+          description,
+          isPartOf: { '@id': `${site}/docs/#website` },
+          author: { '@id': authorId },
           publisher: { '@id': organizationId },
+          ...(frontmatter.reviewed
+            ? { dateModified: frontmatter.reviewed }
+            : frontmatter.dateModified
+              ? { dateModified: frontmatter.dateModified }
+              : {}),
         },
-        pageSchema,
+      );
+    }
+    return [
+      ['meta', { name: 'description', content: description }],
+      ['link', { rel: 'canonical', href: canonicalUrl(path) }],
+      ['meta', { property: 'og:title', content: title }],
+      ['meta', { property: 'og:description', content: description }],
+      ['meta', { property: 'og:url', content: canonicalUrl(path) }],
+      ['meta', { property: 'og:image', content: SOCIAL_IMAGE_URL }],
+      ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+      ['meta', { name: 'twitter:title', content: title }],
+      ['meta', { name: 'twitter:description', content: description }],
+      ['meta', { name: 'twitter:url', content: canonicalUrl(path) }],
+      ['meta', { name: 'twitter:image', content: SOCIAL_IMAGE_URL }],
+      [
+        'script',
+        { type: 'application/ld+json', 'data-energy-replay-seo': 'jsonld' },
+        jsonLdScript(jsonLd),
       ],
-    };
-
-    pageData.frontmatter.head = [
-      ...(pageData.frontmatter.head ?? []),
-      ['script', { type: 'application/ld+json' }, JSON.stringify(schema)],
     ];
   },
   themeConfig: {

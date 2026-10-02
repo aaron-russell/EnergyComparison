@@ -1,3 +1,8 @@
+---
+title: Connect and import history | Energy Replay
+description: Connect an energy provider and import secure, normalized household history into Energy Replay.
+---
+
 # Connect and import history
 
 ## Connect an energy provider

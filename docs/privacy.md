@@ -1,3 +1,10 @@
+---
+title: Privacy | Energy Replay
+description: Learn how Energy Replay keeps credentials, readings and charging records in the browser session.
+canonical: /docs/operations/privacy-and-security.html
+reviewed: 2026-10-02
+---
+
 # Privacy policy
 
 This policy describes the browser application and the documentation site using facts in the

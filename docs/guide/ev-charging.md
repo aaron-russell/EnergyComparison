@@ -1,3 +1,8 @@
+---
+title: EV charging | Energy Replay
+description: Import, review and attribute EV charging sessions without double-counting household energy.
+---
+
 # EV charging
 
 EV charging is optional context for pricing electricity. Household imports already include charging,

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { Shell } from './components/Shell';
+import { SeoMetadata } from './components/SeoMetadata';
 const ConnectionPage = lazy(() =>
   import('./pages/Connection').then((module) => ({ default: module.ConnectionPage })),
 );
@@ -51,6 +52,7 @@ export default function App({ reset }: { reset: () => void }) {
   };
   return (
     <div data-theme={theme}>
+      <SeoMetadata step={step as 0 | 1 | 2 | 3 | 4 | 5} />
       <Shell
         step={step}
         navigate={navigate}

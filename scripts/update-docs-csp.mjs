@@ -9,20 +9,20 @@ function htmlFiles(directory) {
   });
 }
 
-const scripts = htmlFiles('dist/docs').flatMap((path) => {
-  const html = readFileSync(path, 'utf8');
-  return [...html.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/gi)].map(
-    ([, script]) => script,
-  );
-});
-const hashes = [...new Set(scripts)].map(
-  (script) => `'sha256-${createHash('sha256').update(script).digest('base64')}'`,
-);
+const hashes = new Set();
+for (const file of htmlFiles('dist/docs')) {
+  const html = readFileSync(file, 'utf8');
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script(?:\s[^>]*)?>/gi)) {
+    if (!/\bsrc\s*=/.test(match[1])) {
+      hashes.add(`'sha256-${createHash('sha256').update(match[2]).digest('base64')}'`);
+    }
+  }
+}
 const path = existsSync('dist/_headers') ? 'dist/_headers' : 'public/_headers';
 const headers = readFileSync(path, 'utf8');
 const updated = headers.replace(
   /(?<=\/docs\/\*\n {2}Content-Security-Policy: .*?script-src 'self')(?: [^;]*)?(?=;)/,
-  ` ${hashes.join(' ')}`,
+  ` ${[...hashes].join(' ')}`,
 );
 
 if (updated !== headers) writeFileSync('dist/_headers', updated);

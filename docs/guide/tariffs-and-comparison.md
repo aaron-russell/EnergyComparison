@@ -1,3 +1,8 @@
+---
+title: Tariffs and comparison | Energy Replay
+description: Build tariff definitions and compare identical historical usage across your chosen rates.
+---
+
 # Tariffs and comparison
 
 There is no live tariff catalogue. Enter the rates you want to test, load synthetic examples, or import
