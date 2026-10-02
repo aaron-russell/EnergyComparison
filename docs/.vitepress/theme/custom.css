@@ -46,3 +46,24 @@
   display: table;
   width: 100%;
 }
+
+.site-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 auto 1.25rem;
+  max-width: 688px;
+  color: var(--vp-c-text-2);
+  font-size: 0.875rem;
+}
+
+.related-content {
+  border-top: 1px solid var(--vp-c-divider);
+  margin: 2.5rem auto 0;
+  max-width: 688px;
+  padding-top: 1.25rem;
+}
+
+.related-content h2 {
+  font-size: 1.1rem;
+}

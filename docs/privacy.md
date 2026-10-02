@@ -28,4 +28,4 @@ The handbook is static documentation. If you contact the project through GitHub,
 that interaction under its own terms. Do not submit real credentials or household records in public
 issues. Security reports should follow the private process in [SECURITY.md](https://github.com/aaron-russell/EnergyComparison/blob/main/SECURITY.md).
 
-For the implementation details and operational guidance, see the [privacy and security guide](./operations/privacy-and-security.md).
+For the implementation details and operational guidance, see the [privacy and security guide](/operations/privacy-and-security).
