@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
@@ -42,6 +42,7 @@ try {
 }
 
 export default defineConfig({
+  appType: 'mpa',
   plugins: [
     react(),
     {
@@ -52,6 +53,29 @@ export default defineConfig({
           Object.entries(headers).forEach(([name, value]) => {
             response.setHeader(name, value);
           });
+          if (request.url?.split('?')[0] === '/sitemap.xml') {
+            response.statusCode = 200;
+            response.setHeader('Content-Type', 'application/xml');
+            response.end(readFileSync(new URL('./dist/sitemap.xml', import.meta.url)));
+            return;
+          }
+          const pathname = request.url?.split('?')[0] ?? '/';
+          const asset = new URL(`./dist${pathname}`, import.meta.url);
+          const index = new URL(
+            `./dist${pathname.endsWith('/') ? pathname : `${pathname}/`}index.html`,
+            import.meta.url,
+          );
+          if (
+            request.method === 'GET' &&
+            pathname !== '/' &&
+            (!existsSync(asset) || !statSync(asset).isFile()) &&
+            (!existsSync(index) || !statSync(index).isFile())
+          ) {
+            response.statusCode = 404;
+            response.setHeader('Content-Type', 'text/html; charset=UTF-8');
+            response.end(readFileSync(new URL('./dist/404.html', import.meta.url)));
+            return;
+          }
           next();
         });
       },

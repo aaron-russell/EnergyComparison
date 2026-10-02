@@ -31,7 +31,17 @@ function escapeXml(value) {
 }
 
 const files = await htmlFiles(outputDirectory);
-const paths = files.map(publicPath).sort();
+const legacyDocumentationPaths = new Set([
+  '/docs/adapters.html',
+  '/docs/cloudflare-pages.html',
+  '/docs/cloudflare-workers.html',
+  '/docs/release-checks.html',
+  '/docs/privacy.html',
+]);
+const paths = files
+  .map(publicPath)
+  .filter((path) => !legacyDocumentationPaths.has(path))
+  .sort();
 const urls = paths
   .map((path) => `  <url><loc>${escapeXml(`${siteOrigin}${path}`)}</loc></url>`)
   .join('\n');
