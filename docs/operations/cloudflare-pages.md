@@ -15,6 +15,27 @@ npm run preview
 Check `/`, `/docs/`, a nested handbook page, and an application route. The VitePress base path is
 `/docs/`, so do not test the generated site only at its filesystem root.
 
+## Routing and response policy
+
+Pages serves matching files from `dist/`, so the generated handbook remains under `/docs/` and the
+application keeps its static SPA fallback. The canonical handbook entry point is `/docs/`; do not add
+a broad redirect or `404.html`, because either can interfere with nested docs routes or application
+fallback behavior.
+
+Entrypoint HTML uses `public, max-age=0, must-revalidate` so deployments can change script references
+and SEO metadata immediately. Vite and VitePress fingerprinted files under `/assets/` and
+`/docs/assets/` use one-year immutable caching. Stable public docs files such as `logo.svg` and
+`theme-sync.js` revalidate instead of receiving immutable caching.
+
+Cloudflare Pages owns ETags and negotiated content encoding. The repository deliberately does not set
+either header or `no-transform`. Pages’ default `Access-Control-Allow-Origin: *` is detached because
+the site has no cross-origin static-asset requirement. `/api/*` is explicitly `no-store` as a
+defensive rule for future server responses; the current deployment has no API or Pages Function.
+
+The `/docs/*` rule detaches the application CSP before applying the VitePress CSP, so documentation
+responses have exactly one effective policy. Preview `pages.dev` hostnames receive `X-Robots-Tag:
+noindex`; the production custom domain does not.
+
 ## GitHub Actions requirements
 
 The deploy workflow requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. CI runs application

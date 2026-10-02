@@ -12,17 +12,48 @@ test('combined production build serves the app and handbook', async ({ page }) =
   });
   await page.goto('/docs/');
   const docsResponse = await page.request.get('/docs/');
-  const docsCsp = docsResponse.headers()['content-security-policy'];
+  const docsHeaders = docsResponse.headers();
+  const docsCsp = docsHeaders['content-security-policy'];
   expect(docsCsp).toContain("script-src 'self'");
   expect(docsCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
-  expect(docsResponse.headers()['referrer-policy']).toBe('no-referrer');
-  expect(docsResponse.headers()['x-content-type-options']).toBe('nosniff');
-  expect(docsResponse.headers()['cross-origin-opener-policy']).toBe('same-origin');
+  expect(docsCsp.match(/default-src/g)).toHaveLength(1);
+  expect(docsHeaders['cache-control']).toBe('public, max-age=0, must-revalidate');
+  expect(docsHeaders['referrer-policy']).toBe('no-referrer');
+  expect(docsHeaders['strict-transport-security']).toContain('max-age=31536000');
+  expect(docsHeaders['x-content-type-options']).toBe('nosniff');
+  expect(docsHeaders['x-frame-options']).toBe('DENY');
+  expect(docsHeaders['permissions-policy']).toContain('camera=()');
+  expect(docsHeaders['cross-origin-opener-policy']).toBe('same-origin');
+  expect(docsHeaders['access-control-allow-origin']).toBeUndefined();
   const appResponse = await page.request.get('/');
-  expect(appResponse.headers()['content-security-policy']).not.toMatch(
-    /script-src[^;]*'unsafe-inline'/,
-  );
-  expect(appResponse.headers()['link']).toContain('</sitemap.xml>; rel="sitemap"');
+  const appHeaders = appResponse.headers();
+  expect(appHeaders['content-security-policy']).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  expect(appHeaders['cache-control']).toBe('public, max-age=0, must-revalidate');
+  expect(appHeaders.etag).toBeTruthy();
+  expect(appHeaders['access-control-allow-origin']).toBeUndefined();
+  const conditional = await page.request.get('/', {
+    headers: { 'If-None-Match': appHeaders.etag },
+  });
+  expect(conditional.status()).toBe(304);
+
+  const appHtml = await appResponse.text();
+  const appAsset = appHtml.match(/(?:src|href)="(\/assets\/[^"?]+)"/)?.[1];
+  expect(appAsset).toBeTruthy();
+  const appAssetResponse = await page.request.get(appAsset!);
+  expect(appAssetResponse.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+  expect(appAssetResponse.headers()['access-control-allow-origin']).toBeUndefined();
+
+  const docsHtml = await docsResponse.text();
+  const docsAsset = docsHtml.match(/(?:src|href)="(\/docs\/assets\/[^"?]+)"/)?.[1];
+  expect(docsAsset).toBeTruthy();
+  const docsAssetResponse = await page.request.get(docsAsset!);
+  expect(docsAssetResponse.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+  const encoding = docsAssetResponse.headers()['content-encoding'];
+  if (encoding) expect(['br', 'gzip', 'zstd']).toContain(encoding);
+
+  const apiResponse = await page.request.get('/api/not-configured');
+  expect(apiResponse.headers()['cache-control']).toBe('no-store');
+  expect(appHeaders['link']).toContain('</sitemap.xml>; rel="sitemap"');
   const robotsResponse = await page.request.get('/robots.txt');
   expect(robotsResponse.status()).toBe(200);
   expect(robotsResponse.headers()['content-type']).toMatch(/^text\/plain/);
