@@ -50,7 +50,8 @@ number, or general business email, so those details are intentionally not inferr
 The canonical organization entity is
 `https://energy.russell-tech.co.uk/docs/about.html#russell-tech`.
 
-Read the [editorial policy](/editorial-policy), [privacy policy](/privacy), and [contact page](/contact)
+Read the [editorial policy](/editorial-policy), [privacy and security guide](/operations/privacy-and-security),
+and [contact page](/contact)
 for the project’s publishing, privacy, and communication boundaries.
 
 ## Project scope

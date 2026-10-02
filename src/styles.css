@@ -196,6 +196,13 @@ nav {
   font-weight: 700;
   color: var(--accent);
 }
+.docs-link {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
 .topbar {
   min-height: 85px;
   display: flex;

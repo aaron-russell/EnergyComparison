@@ -50,4 +50,5 @@ are changing the code, read the [development workflow](/guide/development) befor
 ## About this project
 
 Read [about the author and Russell Tech](/about), the [Energy Replay project case study](/projects/energy-replay),
-the [editorial policy](/editorial-policy), [privacy policy](/privacy), or [contact guidance](/contact).
+the [editorial policy](/editorial-policy), [privacy and security guide](/operations/privacy-and-security),
+or [contact guidance](/contact).

@@ -130,6 +130,7 @@ export default defineConfig({
     logo: '/logo.svg',
     siteTitle: 'Energy Replay',
     nav: [
+      { text: 'Open app', link: '/' },
       { text: 'Guide', link: '/guide/using-the-app' },
       { text: 'Open the app', link: 'https://energy.russell-tech.co.uk/' },
       { text: 'Extend', link: '/guide/adding-an-adapter' },
