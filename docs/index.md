@@ -11,6 +11,9 @@ hero:
       text: Use the app
       link: /guide/using-the-app
     - theme: alt
+      text: Open Energy Replay
+      link: https://energy.russell-tech.co.uk/
+    - theme: alt
       text: Add an adapter
       link: /guide/adding-an-adapter
 features:
@@ -34,6 +37,15 @@ handbook version follows the application package version: **v0.1.0**.
 Use the search box to find a concept, or start with the [user journey](/guide/using-the-app). If you
 are changing the code, read the [development workflow](/guide/development) before the relevant
 [adapter guide](/guide/adding-an-adapter).
+
+<div class="docs-app-cta">
+  <div>
+    <span class="docs-app-cta__eyebrow">READY TO REPLAY?</span>
+    <strong>Take the documented journey in the app.</strong>
+    <p>Bring your usage and tariff definitions together in a private browser session.</p>
+  </div>
+  <a class="docs-app-cta__link" href="/">Open Energy Replay <span aria-hidden="true">↗</span></a>
+</div>
 
 ## About this project
 
