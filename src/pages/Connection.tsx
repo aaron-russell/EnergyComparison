@@ -1,6 +1,6 @@
 import { Selection } from '../components/Selection';
 import { useState } from 'react';
-import { Cable, FlaskConical } from 'lucide-react';
+import { Cable, FlaskConical, Sparkles } from 'lucide-react';
 import { energyProviders } from '../adapters/registries';
 import type { EnergyConnection, Fields } from '../adapters/contracts';
 import { useOperation } from '../state/use-operation';
@@ -16,9 +16,10 @@ import {
 type Props = {
   connection: EnergyConnection | null;
   connected: (connection: EnergyConnection) => void;
+  loadDemo: () => void;
   next: () => void;
 };
-export function ConnectionPage({ connection, connected, next }: Props) {
+export function ConnectionPage({ connection, connected, loadDemo, next }: Props) {
   const [providerId, setProviderId] = useState(connection?.providerId ?? energyProviders[0].id);
   const [values, setValues] = useState<Fields>({});
   const operation = useOperation();
@@ -75,11 +76,7 @@ export function ConnectionPage({ connection, connected, next }: Props) {
               disabled={operation.busy || !!connection}
             />
             <ErrorNotice message={operation.error} />
-            {!connection && (
-              <button className="primary" disabled={operation.busy} type="submit">
-                Connect provider <Cable size={16} />
-              </button>
-            )}
+            {!connection && <ConnectionActions busy={operation.busy} loadDemo={loadDemo} />}
           </form>
           <OperationStatus {...operation} />
           {connection && (
@@ -93,6 +90,19 @@ export function ConnectionPage({ connection, connected, next }: Props) {
       </div>
       <PrivacyNote />
     </>
+  );
+}
+
+function ConnectionActions({ busy, loadDemo }: { busy: boolean; loadDemo: () => void }) {
+  return (
+    <div className="actions">
+      <button className="primary" disabled={busy} type="submit">
+        Connect provider <Cable size={16} />
+      </button>
+      <button type="button" disabled={busy} onClick={loadDemo}>
+        Load complete demo <Sparkles size={16} />
+      </button>
+    </div>
   );
 }
 

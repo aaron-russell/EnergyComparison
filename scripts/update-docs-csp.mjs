@@ -10,10 +10,12 @@ function htmlFiles(directory) {
 }
 
 const hashes = new Set();
-for (const path of htmlFiles('dist/docs')) {
-  const html = readFileSync(path, 'utf8');
-  for (const [, script] of html.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/gi)) {
-    hashes.add(`'sha256-${createHash('sha256').update(script).digest('base64')}'`);
+for (const file of htmlFiles('dist/docs')) {
+  const html = readFileSync(file, 'utf8');
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script(?:\s[^>]*)?>/gi)) {
+    if (!/\bsrc\s*=/.test(match[1])) {
+      hashes.add(`'sha256-${createHash('sha256').update(match[2]).digest('base64')}'`);
+    }
   }
 }
 

@@ -1,3 +1,8 @@
+---
+title: Adapter contracts | Energy Replay
+description: Reference the TypeScript contracts shared by Energy Replay energy and charging adapters.
+---
+
 # Adapter contracts
 
 These TypeScript interfaces are the supported extension boundary. Source links point to the current
