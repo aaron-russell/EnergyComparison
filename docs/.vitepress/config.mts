@@ -3,6 +3,8 @@ import packageJson from '../../package.json';
 
 const repository = 'https://github.com/aaron-russell/EnergyComparison';
 const site = 'https://energy.russell-tech.co.uk';
+const authorWebsite = 'https://aaron-russell.co.uk';
+const organizationWebsite = 'https://russell-tech.co.uk';
 const version = packageJson.version;
 const authorId = `${site}/docs/about.html#aaron-russell`;
 const organizationId = `${site}/docs/about.html#russell-tech`;
@@ -55,13 +57,13 @@ export default defineConfig({
           '@id': authorId,
           name: 'Aaron Russell',
           url: authorId,
-          sameAs: [repository],
+          sameAs: [repository, authorWebsite],
         },
         {
           '@type': 'Organization',
           '@id': organizationId,
           name: 'Russell Tech',
-          url: site,
+          url: organizationWebsite,
         },
         {
           '@type': 'WebSite',

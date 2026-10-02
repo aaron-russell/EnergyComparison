@@ -33,6 +33,7 @@ These are repository-observable implementation details, not a claim about formal
 client work.
 
 - GitHub: [aaron-russell/EnergyComparison](https://github.com/aaron-russell/EnergyComparison)
+- Website: [aaron-russell.co.uk](https://aaron-russell.co.uk)
 - LinkedIn: **Owner to supply the profile URL**
 - Public contact: use the [GitHub repository](https://github.com/aaron-russell/EnergyComparison)
   for non-sensitive project questions. Do not post credentials, meter identifiers, or real
@@ -41,7 +42,7 @@ client work.
 The canonical author entity is `https://energy.russell-tech.co.uk/docs/about.html#aaron-russell`.
 It is reused in the structured data for this handbook and the project case study.
 
-## Russell Tech
+## [Russell Tech](https://russell-tech.co.uk)
 
 Russell Tech is the brand shown in the application as “Energy Replay by Russell Tech”. The
 repository does not currently provide a registered-company profile, office address, telephone
