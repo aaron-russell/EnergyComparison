@@ -12,7 +12,7 @@ function htmlFiles(directory) {
 const hashes = new Set();
 for (const file of htmlFiles('dist/docs')) {
   const html = readFileSync(file, 'utf8');
-  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script(?:\s[^>]*)?>/gi)) {
     if (!/\bsrc\s*=/.test(match[1])) {
       hashes.add(`'sha256-${createHash('sha256').update(match[2]).digest('base64')}'`);
     }
