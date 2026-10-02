@@ -120,8 +120,12 @@ const report = {
     outgoing: outgoing.get(url),
     depth: depths.get(url) ?? null,
   })),
-  orphanPages: [...pages.keys()].filter((path) => path !== '/' && incoming.get(path) === 0),
-  deepPages: [...pages.keys()].filter((path) => (depths.get(path) ?? Infinity) > 3),
+  orphanPages: [...pages.keys()].filter(
+    (path) => path !== '/' && !redirects.has(path) && incoming.get(path) === 0,
+  ),
+  deepPages: [...pages.keys()].filter(
+    (path) => !redirects.has(path) && (depths.get(path) ?? Infinity) > 3,
+  ),
   brokenInternalLinks,
   redirectingInternalLinks,
   documentationAliases: aliases,

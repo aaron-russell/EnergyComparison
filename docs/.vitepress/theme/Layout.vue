@@ -97,6 +97,26 @@ const related: Record<string, { text: string; href: string }[]> = {
     { text: 'About Energy Replay', href: '/about' },
     { text: 'Editorial policy', href: '/editorial-policy' },
   ],
+  '/privacy': [
+    { text: 'Privacy and security', href: '/operations/privacy-and-security' },
+    { text: 'About Energy Replay', href: '/about' },
+  ],
+  '/adapters': [
+    { text: 'Add an energy adapter', href: '/guide/adding-an-adapter' },
+    { text: 'Adapter contracts', href: '/reference/contracts' },
+  ],
+  '/cloudflare-pages': [
+    { text: 'Deploy to Pages', href: '/operations/cloudflare-pages' },
+    { text: 'Release checks', href: '/operations/release-checks' },
+  ],
+  '/cloudflare-workers': [
+    { text: 'Workers alternative', href: '/operations/cloudflare-workers' },
+    { text: 'Release checks', href: '/operations/release-checks' },
+  ],
+  '/release-checks': [
+    { text: 'Release checks', href: '/operations/release-checks' },
+    { text: 'Deploy to Pages', href: '/operations/cloudflare-pages' },
+  ],
   '/editorial-policy': [
     { text: 'About Energy Replay', href: '/about' },
     { text: 'Contact', href: '/contact' },
