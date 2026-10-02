@@ -1,3 +1,8 @@
+---
+title: Troubleshooting | Energy Replay
+description: Diagnose import, coverage, charging, provider and hosted-preview issues in Energy Replay.
+---
+
 # Troubleshooting
 
 ## The app will not compare

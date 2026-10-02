@@ -1,3 +1,8 @@
+---
+title: Development workflow | Energy Replay
+description: Set up Energy Replay locally and run its formatting, lint, test, build and documentation checks.
+---
+
 # Development workflow
 
 ## Repository map

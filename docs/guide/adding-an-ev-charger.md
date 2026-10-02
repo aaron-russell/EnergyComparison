@@ -1,3 +1,8 @@
+---
+title: Add an EV charger | Energy Replay
+description: Add a file or API charging adapter with safe parsing, provenance and review behavior.
+---
+
 # Add an EV charger
 
 Charging integrations are independent of energy providers. A charging adapter produces a preview of

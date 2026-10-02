@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress';
 import packageJson from '../../package.json';
+import { buildJsonLd, canonicalUrl, jsonLdScript, SOCIAL_IMAGE_URL } from '../../src/seo';
 
 const repository = 'https://github.com/aaron-russell/EnergyComparison';
 const version = packageJson.version;
@@ -21,12 +22,67 @@ export default defineConfig({
   description: 'Documentation for the Energy Replay historical tariff comparison tool.',
   base: '/docs/',
   cleanUrls: false,
+  titleTemplate: false,
   lastUpdated: true,
   appearance: false,
   locales: {
     root: { label: 'English', lang: 'en' },
   },
   head: [['script', { src: '/docs/theme-sync.js' }]],
+  transformHead({ pageData }) {
+    const frontmatter = pageData.frontmatter as {
+      canonical?: string;
+      description?: string;
+      article?: boolean;
+      datePublished?: string;
+      dateModified?: string;
+      author?: string;
+    };
+    const relativePath =
+      pageData.relativePath === 'index.md'
+        ? '/docs/'
+        : `/docs/${pageData.relativePath.replace(/\.md$/, '.html')}`;
+    const path = frontmatter.canonical ?? relativePath;
+    const title = pageData.title;
+    const description = frontmatter.description ?? 'Energy Replay documentation.';
+    const breadcrumbs = [
+      { name: 'Energy Replay', path: '/' },
+      { name: 'Documentation', path: '/docs/' },
+      ...(relativePath === '/docs/' ? [] : [{ name: title, path }]),
+    ];
+    const metadata = {
+      title,
+      description,
+      path,
+      breadcrumbs,
+      ...(frontmatter.article && {
+        article: {
+          headline: title,
+          datePublished: frontmatter.datePublished,
+          dateModified: frontmatter.dateModified,
+          author: frontmatter.author,
+        },
+      }),
+    };
+    return [
+      ['meta', { name: 'description', content: description }],
+      ['link', { rel: 'canonical', href: canonicalUrl(path) }],
+      ['meta', { property: 'og:title', content: title }],
+      ['meta', { property: 'og:description', content: description }],
+      ['meta', { property: 'og:url', content: canonicalUrl(path) }],
+      ['meta', { property: 'og:image', content: SOCIAL_IMAGE_URL }],
+      ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+      ['meta', { name: 'twitter:title', content: title }],
+      ['meta', { name: 'twitter:description', content: description }],
+      ['meta', { name: 'twitter:url', content: canonicalUrl(path) }],
+      ['meta', { name: 'twitter:image', content: SOCIAL_IMAGE_URL }],
+      [
+        'script',
+        { type: 'application/ld+json', 'data-energy-replay-seo': 'jsonld' },
+        jsonLdScript(buildJsonLd(metadata)),
+      ],
+    ];
+  },
   themeConfig: {
     logo: '/logo.svg',
     siteTitle: 'Energy Replay',
