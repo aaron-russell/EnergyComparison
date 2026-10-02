@@ -12,7 +12,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
       localStorage.setItem('energy-replay:theme', 'dark');
     }
   });
-  await page.goto('/docs/guide/using-the-app');
+  await page.goto('/docs/guide/using-the-app.html');
   await expect(page.locator('h1#use-the-app')).toBeVisible();
   expect(
     await page.evaluate(() =>
