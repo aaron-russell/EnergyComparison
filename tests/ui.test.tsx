@@ -388,6 +388,36 @@ describe('page journeys', () => {
     expect(update).toHaveBeenCalled();
   });
 
+  it('shows compact prices for flat, multi-rate, gas-only and adjusted tariffs', () => {
+    const flat = {
+      ...structuredClone(exampleTariffs[0]),
+      id: 'flat',
+      name: 'Flat prices',
+      annualCredit: '100',
+      ev: { mode: 'discount' as const, rate: '2.5' },
+    };
+    const gasOnly = {
+      ...structuredClone(exampleTariffs[0]),
+      id: 'gas-only',
+      name: 'Gas only',
+      electricity: undefined,
+    };
+    render(
+      <TariffsPage
+        data={data({ tariffs: [flat, exampleTariffs[1], gasOnly] })}
+        update={vi.fn()}
+        next={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('25.00p/kWh · 49.00p/day')).toBeVisible();
+    expect(screen.getAllByText('6.20p/kWh · 31.00p/day')).toHaveLength(3);
+    expect(screen.getByText('£1.00/year')).toBeVisible();
+    expect(screen.getByText('Discount 2.50p/kWh')).toBeVisible();
+    expect(screen.getByText('8.00p–29.00p/kWh · 2 bands · 51.00p/day')).toBeVisible();
+    expect(screen.getAllByText('Not included')).toHaveLength(1);
+  });
+
   it('loads Tariff Tracker tariffs and displays provider caveats', async () => {
     const update = vi.fn();
     vi.stubGlobal(

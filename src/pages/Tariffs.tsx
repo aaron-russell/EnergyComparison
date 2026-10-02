@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Save, Copy, Trash2 } from 'lucide-react';
+import Decimal from '../core/decimal';
 import type { Tariff } from '../core/types';
 import { blankTariff, jsonSource } from '../core/tariff';
 import { exampleTariffs } from '../fixtures/synthetic';
@@ -281,12 +282,7 @@ function TariffCard({
       <span className="badge">{baseline ? 'CURRENT BASELINE' : 'ALTERNATIVE'}</span>
       <h2>{tariff.name}</h2>
       <p>Renewable: {tariff.renewable}</p>
-      <p>
-        {tariff.electricity
-          ? `${tariff.electricity.bands.length} electricity band(s)`
-          : 'No electricity price'}{' '}
-        · {tariff.gas ? 'Gas included' : 'No gas price'}
-      </p>
+      <TariffPriceSummary tariff={tariff} />
       <div className="actions">
         <button onClick={edit}>Edit rates</button>
         <button onClick={choose} disabled={baseline}>
@@ -309,6 +305,62 @@ function TariffCard({
       </div>
     </article>
   );
+}
+
+function TariffPriceSummary({ tariff }: { tariff: Tariff }) {
+  return (
+    <dl className="tariff-prices" aria-label={`${tariff.name} prices`}>
+      <PriceSummaryRow
+        label="Electricity"
+        value={tariff.electricity ? electricitySummary(tariff) : 'Not included'}
+      />
+      <PriceSummaryRow
+        label="Gas"
+        value={
+          tariff.gas
+            ? `${pence(tariff.gas.rate)}/kWh · ${pence(tariff.gas.standing)}/day`
+            : 'Not included'
+        }
+      />
+      {new Decimal(tariff.annualCredit).isZero() === false && (
+        <PriceSummaryRow label="Annual credit" value={`${pounds(tariff.annualCredit)}/year`} />
+      )}
+      {tariff.ev && (
+        <PriceSummaryRow
+          label="EV adjustment"
+          value={`${tariff.ev.mode === 'override' ? 'Override' : 'Discount'} ${pence(tariff.ev.rate)}/kWh`}
+        />
+      )}
+    </dl>
+  );
+}
+
+function PriceSummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+function electricitySummary(tariff: Tariff): string {
+  const electricity = tariff.electricity!;
+  const rates = electricity.bands.map((band) => new Decimal(band.rate));
+  const lowest = rates.reduce((minimum, rate) => (rate.lessThan(minimum) ? rate : minimum));
+  const highest = rates.reduce((maximum, rate) => (rate.greaterThan(maximum) ? rate : maximum));
+  const unitRate = lowest.equals(highest)
+    ? `${pence(lowest.toString())}/kWh`
+    : `${pence(lowest.toString())}–${pence(highest.toString())}/kWh · ${rates.length} bands`;
+  return `${unitRate} · ${pence(electricity.standing)}/day`;
+}
+
+function pence(value: string): string {
+  return `${new Decimal(value).toDecimalPlaces(2).toFixed(2)}p`;
+}
+
+function pounds(value: string): string {
+  return `£${new Decimal(value).div(100).toDecimalPlaces(2).toFixed(2)}`;
 }
 
 async function readTariffFile(

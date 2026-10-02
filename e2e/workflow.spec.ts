@@ -236,6 +236,7 @@ async function compareSyntheticPeriod(
   await page.getByRole('button', { name: 'Review optional EV charging' }).click();
   await page.getByRole('button', { name: 'Continue to tariffs' }).click();
   await page.getByRole('button', { name: 'Load synthetic examples' }).click();
+  await expect(page.getByText('25.00p/kWh · 49.00p/day')).toBeVisible();
   await page.getByRole('button', { name: 'Use as baseline' }).first().click();
   await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
   if (electricityOnly) {
