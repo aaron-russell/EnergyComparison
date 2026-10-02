@@ -14,7 +14,10 @@ Errors are sanitised: upstream error bodies and request URLs are never displayed
 `public/_headers` defines production CSP with no evaluated or inline scripts, no inline styles,
 fixed connection origins, no framing, and no object/embed content. Assets are self-hosted. AJV
 standalone validators are generated before production builds; the browser never compiles schemas
-with `new Function`. No sensitive endpoint exists on Cloudflare.
+with `new Function`. No sensitive endpoint exists on Cloudflare. HTML is revalidated, fingerprinted
+assets are immutable for one year, and `/api/*` is explicitly `no-store` for future protection.
+Cloudflare Pages supplies ETags and content encoding; the repository does not manufacture either.
+The default wildcard CORS header is detached because no cross-origin asset access is required.
 
 ## Reporting and maintenance
 

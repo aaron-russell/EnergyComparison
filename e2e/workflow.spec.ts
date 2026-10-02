@@ -23,16 +23,64 @@ test('combined production build serves the app and handbook', async ({ page }) =
   ).toContain('root');
   await page.goto('/docs/');
   const docsResponse = await page.request.get('/docs/');
-  const docsCsp = docsResponse.headers()['content-security-policy'];
+  const docsHeaders = docsResponse.headers();
+  const docsCsp = docsHeaders['content-security-policy'];
   expect(docsCsp).toContain("script-src 'self'");
   expect(docsCsp).toMatch(/script-src[^;]*'sha256-/);
   expect(docsCsp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
-  expect(docsResponse.headers()['referrer-policy']).toBe('no-referrer');
-  expect(docsResponse.headers()['x-content-type-options']).toBe('nosniff');
-  expect(docsResponse.headers()['cross-origin-opener-policy']).toBe('same-origin');
+  expect(docsCsp.match(/default-src/g)).toHaveLength(1);
+  expect(docsHeaders['cache-control']).toBe('public, max-age=0, must-revalidate');
+  expect(docsHeaders['referrer-policy']).toBe('no-referrer');
+  expect(docsHeaders['strict-transport-security']).toContain('max-age=31536000');
+  expect(docsHeaders['x-content-type-options']).toBe('nosniff');
+  expect(docsHeaders['x-frame-options']).toBe('DENY');
+  expect(docsHeaders['permissions-policy']).toContain('camera=()');
+  expect(docsHeaders['cross-origin-opener-policy']).toBe('same-origin');
+  expect(docsHeaders['access-control-allow-origin']).toBeUndefined();
   const appResponse = await page.request.get('/');
-  expect(appResponse.headers()['content-security-policy']).not.toMatch(
-    /script-src[^;]*'unsafe-inline'/,
+  const appHeaders = appResponse.headers();
+  expect(appHeaders['content-security-policy']).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+  expect(appHeaders['cache-control']).toBe('public, max-age=0, must-revalidate');
+  expect(appHeaders.etag).toBeTruthy();
+  expect(appHeaders['access-control-allow-origin']).toBeUndefined();
+  const conditional = await page.request.get('/', {
+    headers: { 'If-None-Match': appHeaders.etag },
+  });
+  expect(conditional.status()).toBe(304);
+
+  const appHtml = await appResponse.text();
+  const appAsset = appHtml.match(/(?:src|href)="(\/assets\/[^"?]+)"/)?.[1];
+  expect(appAsset).toBeTruthy();
+  const appAssetResponse = await page.request.get(appAsset!);
+  expect(appAssetResponse.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+  expect(appAssetResponse.headers()['access-control-allow-origin']).toBeUndefined();
+
+  const docsHtml = await docsResponse.text();
+  const docsAsset = docsHtml.match(/(?:src|href)="(\/docs\/assets\/[^"?]+)"/)?.[1];
+  expect(docsAsset).toBeTruthy();
+  const docsAssetResponse = await page.request.get(docsAsset!);
+  expect(docsAssetResponse.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+  const encoding = docsAssetResponse.headers()['content-encoding'];
+  if (encoding) expect(['br', 'gzip', 'zstd']).toContain(encoding);
+
+  const apiResponse = await page.request.get('/api/not-configured');
+  expect(apiResponse.headers()['cache-control']).toBe('no-store');
+  expect(appHeaders['link']).toContain('</sitemap.xml>; rel="sitemap"');
+  const robotsResponse = await page.request.get('/robots.txt');
+  expect(robotsResponse.status()).toBe(200);
+  expect(robotsResponse.headers()['content-type']).toMatch(/^text\/plain/);
+  const robots = await robotsResponse.text();
+  expect(robots).toContain('Content-Signal: ai-train=no, search=yes, ai-input=yes');
+  expect(robots.indexOf('Content-Signal:')).toBeLessThan(
+    robots.indexOf('User-agent: OAI-SearchBot'),
+  );
+  expect(robots).toContain('Sitemap: https://energy.russell-tech.co.uk/sitemap.xml');
+  const sitemapResponse = await page.request.get('/sitemap.xml');
+  expect(sitemapResponse.status()).toBe(200);
+  expect(sitemapResponse.headers()['content-type']).toMatch(/xml/);
+  expect(await sitemapResponse.text()).toContain('<loc>https://energy.russell-tech.co.uk/</loc>');
+  expect(await sitemapResponse.text()).toContain(
+    '<loc>https://energy.russell-tech.co.uk/docs/</loc>',
   );
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
@@ -103,6 +151,44 @@ async function syntheticImport(page: Page) {
   await page.getByRole('button', { name: 'Import history / retry' }).click();
   await expect(page.getByRole('button', { name: 'Review coverage' })).toBeEnabled();
   await page.getByRole('button', { name: 'Review coverage' }).click();
+}
+
+async function compareSyntheticPeriod(
+  page: Page,
+  start: string,
+  end: string,
+  incomplete = false,
+  electricityOnly = false,
+) {
+  await page.goto('/');
+  await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
+  await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose import period' }).click();
+  if (electricityOnly) {
+    await page
+      .locator('label')
+      .filter({ hasText: 'Example home · gas' })
+      .getByRole('checkbox')
+      .uncheck();
+  }
+  await page.getByLabel('Start date (included)').fill(start);
+  await page.getByLabel('End date (excluded)').fill(end);
+  await page.getByRole('button', { name: 'Import history / retry' }).click();
+  if (incomplete) {
+    await expect(page.getByText('Generating synthetic intervals', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+  }
+  await expect(page.getByRole('button', { name: 'Review coverage' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Review coverage' }).click();
+  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  await page.getByRole('button', { name: 'Continue to tariffs' }).click();
+  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
+  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
+  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
+  if (electricityOnly) {
+    await page.getByLabel('Fuel comparison').selectOption('electricity');
+  }
+  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
 }
 
 test('manual replacement meters connect as one supply without account discovery', async ({
@@ -176,6 +262,33 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   expect(storage.session).toEqual({});
   await page.getByRole('button', { name: 'Clear session' }).click();
   await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
+});
+
+test('labels complete and incomplete 12-month periods correctly', async ({ page }) => {
+  test.setTimeout(120000);
+  await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01', false, true);
+  await expect(page.getByRole('heading', { name: 'Annual usage and monthly cost' })).toBeVisible({
+    timeout: 120000,
+  });
+  await expect(page.getByRole('columnheader', { name: 'Annual cost' })).toBeVisible({
+    timeout: 120000,
+  });
+
+  await compareSyntheticPeriod(page, '2024-01-15', '2025-01-15', false, true);
+  await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
+    timeout: 120000,
+  });
+  await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
+    timeout: 120000,
+  });
+
+  await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01', true, true);
+  await expect(page.getByRole('heading', { name: 'Usage and cost for this period' })).toBeVisible({
+    timeout: 120000,
+  });
+  await expect(page.getByRole('columnheader', { name: 'Period total' })).toBeVisible({
+    timeout: 120000,
+  });
 });
 
 test('manual baseline editing, duplication, validation and persistence', async ({ page }) => {

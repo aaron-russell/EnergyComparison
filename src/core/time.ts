@@ -39,8 +39,10 @@ export function dates(period: Period): string[] {
 }
 export function slots(period: Period): Period[] {
   const out: Period[] = [];
-  for (let t = ms(period.start); t < ms(period.end); t += HALF_HOUR) {
-    out.push({ start: utc(t), end: utc(Math.min(t + HALF_HOUR, ms(period.end))) });
+  const start = ms(period.start);
+  const end = ms(period.end);
+  for (let t = start; t < end; t += HALF_HOUR) {
+    out.push({ start: utc(t), end: utc(Math.min(t + HALF_HOUR, end)) });
   }
   return out;
 }
@@ -72,5 +74,16 @@ export function overlapDuration(first: Period, second: Period): number {
   return Math.max(
     0,
     Math.min(ms(first.end), ms(second.end)) - Math.max(ms(first.start), ms(second.start)),
+  );
+}
+
+export function isAnnualPeriod(period: Period, complete: boolean): boolean {
+  const start = local(period.start).toPlainDate();
+  const end = local(period.end).toPlainDate();
+  return (
+    complete &&
+    start.day === 1 &&
+    end.day === 1 &&
+    Temporal.PlainDate.compare(end, start.add({ months: 12 })) === 0
   );
 }
