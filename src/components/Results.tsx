@@ -1,22 +1,25 @@
 import Decimal, { sum } from '../core/decimal';
-import type { ReplayResult, Tariff } from '../core/types';
+import { isAnnualPeriod } from '../core/time';
+import type { Period, ReplayResult, Tariff } from '../core/types';
 const currency = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
 const money = (value: string) => currency.format(Number(value));
-type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string };
+type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string; period?: Period };
 
-export function ReplayResults({ results, tariffs, baselineId }: Props) {
+export function ReplayResults({ results, tariffs, baselineId, period }: Props) {
   const baseline = results.find((result) => result.tariffId === baselineId)!;
+  const annual = period ? isAnnualPeriod(period, results[0].complete) : false;
   return (
     <div className="results">
+      <AnnualSummary result={results[0]} baseline={baseline} annual={annual} />
       <section className="panel">
-        <h2>Historical replay costs</h2>
+        <h2>{annual ? 'Annual tariff comparison' : 'Historical replay costs'}</h2>
         <div className="table-scroll">
           <table>
             <caption>Identical period, supplies and energy for all tariffs</caption>
             <thead>
               <tr>
                 <th scope="col">Tariff</th>
-                <th scope="col">Period total</th>
+                <th scope="col">{annual ? 'Annual cost' : 'Period total'}</th>
                 <th scope="col">Monthly equivalent</th>
                 <th scope="col">Difference from baseline</th>
               </tr>
@@ -51,6 +54,57 @@ export function ReplayResults({ results, tariffs, baselineId }: Props) {
     </div>
   );
 }
+
+function AnnualSummary({
+  result,
+  baseline,
+  annual,
+}: {
+  result: ReplayResult;
+  baseline: ReplayResult;
+  annual: boolean;
+}) {
+  const period = annual ? '/yr' : '';
+  return (
+    <section className="panel annual-summary">
+      <div>
+        <span className="badge">{annual ? '12-MONTH VIEW' : 'SELECTED PERIOD'}</span>
+        <h2>{annual ? 'Annual usage and monthly cost' : 'Usage and cost for this period'}</h2>
+        <p className="muted">Every tariff is priced against the same household energy usage.</p>
+      </div>
+      <div className="annual-metrics">
+        <div>
+          <span>Electricity usage</span>
+          <strong>
+            {formatKwh(result.energy.electricity)} kWh{period}
+          </strong>
+        </div>
+        <div>
+          <span>Gas usage</span>
+          <strong>
+            {formatKwh(result.energy.gas)} kWh{period}
+          </strong>
+        </div>
+        <div>
+          <span>{annual ? 'Baseline annual cost' : 'Baseline period cost'}</span>
+          <strong>{money(baseline.total)}</strong>
+        </div>
+        <div>
+          <span>{annual ? 'Baseline monthly cost' : 'Baseline monthly equivalent'}</span>
+          <strong>{money(baseline.monthlyEquivalent)}</strong>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function formatKwh(value: string): string {
+  return new Decimal(value)
+    .toDecimalPlaces(0)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 function MonthlyChart({ results }: { results: ReplayResult[] }) {
   const shown = results.slice(0, 2);
   const values = shown.flatMap((result) => result.months.map((month) => Number(month.total)));
