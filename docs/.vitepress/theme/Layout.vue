@@ -89,6 +89,22 @@ const related: Record<string, { text: string; href: string }[]> = {
     { text: 'Development workflow', href: '/guide/development' },
     { text: 'Release checks', href: '/operations/release-checks' },
   ],
+  '/about': [
+    { text: 'Energy Replay project case study', href: '/projects/energy-replay' },
+    { text: 'Editorial policy', href: '/editorial-policy' },
+  ],
+  '/contact': [
+    { text: 'About Energy Replay', href: '/about' },
+    { text: 'Editorial policy', href: '/editorial-policy' },
+  ],
+  '/editorial-policy': [
+    { text: 'About Energy Replay', href: '/about' },
+    { text: 'Contact', href: '/contact' },
+  ],
+  '/projects/energy-replay': [
+    { text: 'About Energy Replay', href: '/about' },
+    { text: 'Development workflow', href: '/guide/development' },
+  ],
 };
 </script>
 
