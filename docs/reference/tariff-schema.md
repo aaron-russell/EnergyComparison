@@ -1,3 +1,8 @@
+---
+title: Tariff JSON schema | Energy Replay
+description: Validate the versioned tariff JSON structure used by Energy Replay imports and exports.
+---
+
 # Tariff JSON schema
 
 The machine-readable tariff schema is [`public/tariff.schema.json`](https://github.com/aaron-russell/EnergyComparison/blob/main/public/tariff.schema.json).

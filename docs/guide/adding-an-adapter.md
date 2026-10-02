@@ -1,3 +1,8 @@
+---
+title: Add an energy adapter | Energy Replay
+description: Implement a provider adapter that preserves Energy Replay's contracts, privacy boundaries and test guarantees.
+---
+
 # Add an energy adapter
 
 An energy adapter connects one provider to the shared replay engine. The adapter owns credentials,

@@ -1,8 +1,7 @@
 ---
 layout: home
 title: Energy Replay
-titleTemplate: Documentation
-description: A practical guide to using and extending Energy Replay.
+description: Practical documentation for using, extending and operating the Energy Replay historical energy comparison tool.
 hero:
   name: Energy Replay
   text: Historical energy comparison, documented end to end.

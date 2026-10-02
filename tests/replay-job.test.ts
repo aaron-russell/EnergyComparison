@@ -19,6 +19,7 @@ function session(tariffs: SessionData['tariffs'], baselineId: string): SessionDa
     estimated: null,
     tariffs,
     baselineId,
+    isDemo: false,
   };
 }
 

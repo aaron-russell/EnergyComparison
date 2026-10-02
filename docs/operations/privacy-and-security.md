@@ -1,3 +1,8 @@
+---
+title: Privacy and security | Energy Replay
+description: Review Energy Replay's browser-only data handling, provider transport rules and security boundaries.
+---
+
 # Privacy and security
 
 Imported readings, credentials, account connections, and charging records remain in the active browser

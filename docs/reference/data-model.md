@@ -1,3 +1,8 @@
+---
+title: Normalized data model | Energy Replay
+description: Reference the anonymous, provider-independent data shapes accepted by the Energy Replay core.
+---
+
 # Normalized data model
 
 The core accepts provider-independent values only.

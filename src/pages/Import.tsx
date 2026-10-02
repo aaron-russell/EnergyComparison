@@ -25,7 +25,14 @@ export function ImportPage({ data, update, next, connection }: Props) {
       dates(period);
       const samePeriod = period.start === data.period.start && period.end === data.period.end;
       const rows: Reading[] = samePeriod ? [...data.readings] : [];
-      update({ readings: rows, charging: [], estimated: null, conflicts: 0, period });
+      update({
+        readings: rows,
+        charging: [],
+        estimated: null,
+        conflicts: 0,
+        period,
+        isDemo: false,
+      });
       try {
         const result = await connection.import(period, context, (batch) => rows.push(...batch));
         setFailures(result.failures);

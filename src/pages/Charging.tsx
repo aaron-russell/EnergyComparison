@@ -20,11 +20,14 @@ export function ChargingPage({ data, update, next }: SessionProps) {
   const provider = chargingProviders.find((item) => item.id === providerId)!;
   const receive = (result: ChargingPreview) => {
     setPreview(result);
-    update({ charging: [...data.charging, ...result.sessions] });
+    update({ charging: [...data.charging, ...result.sessions], isDemo: false });
   };
   const detect = () => {
     try {
-      update({ charging: [...data.charging, ...detectSpikes(data.readings, power)] });
+      update({
+        charging: [...data.charging, ...detectSpikes(data.readings, power)],
+        isDemo: false,
+      });
       setError('');
     } catch {
       setError('Enter a valid charger power.');
@@ -49,44 +52,94 @@ export function ChargingPage({ data, update, next }: SessionProps) {
         Any energy supplier can be paired with any charging source. Household imports already
         include charging; energy is never added twice.
       </PageHeading>
-      <section className="panel">
-        <h2>Charging source</h2>
-        <Selection
-          label="Electricity supply"
-          value={supplyRef}
-          change={setSupplyRef}
-          options={data.supplies
-            .filter((supply) => supply.fuel === 'electricity')
-            .map((supply) => ({ value: supply.ref, label: supply.label }))}
-        />
-        <Selection
-          label="Charging integration"
-          value={providerId}
-          change={setProviderId}
-          options={chargingProviders.map((provider) => ({
-            value: provider.id,
-            label: provider.name,
-          }))}
-        />
-        <p className="muted">{provider.description}</p>
-        {supplyRef &&
-          (provider.method === 'file' ? (
-            <FileChargingForm key={provider.id} {...formProps} />
-          ) : (
-            <ApiChargingForm key={provider.id} {...formProps} />
-          ))}
-        {preview && <MappingPreview preview={preview} />}
-      </section>
+      <ChargingSource
+        supplies={data.supplies}
+        provider={provider}
+        providerId={providerId}
+        setProviderId={setProviderId}
+        supplyRef={supplyRef}
+        setSupplyRef={setSupplyRef}
+        formProps={formProps}
+        preview={preview}
+      />
       <SpikeControls power={power} setPower={setPower} detect={detect} />
       {!!data.charging.length && (
-        <section className="panel">
-          <h2>Review {data.charging.length} sessions</h2>
-          <ChargingReview sessions={data.charging} change={(charging) => update({ charging })} />
-        </section>
+        <ChargingSessions
+          sessions={data.charging}
+          change={(charging) => update({ charging, isDemo: false })}
+        />
       )}
       <ErrorNotice message={error} />
       <NextButton onClick={continueWithEV}>Continue to tariffs</NextButton>
     </>
+  );
+}
+
+function ChargingSource({
+  supplies,
+  provider,
+  providerId,
+  setProviderId,
+  supplyRef,
+  setSupplyRef,
+  formProps,
+  preview,
+}: {
+  supplies: SessionProps['data']['supplies'];
+  provider: (typeof chargingProviders)[number];
+  providerId: string;
+  setProviderId: (value: string) => void;
+  supplyRef: string;
+  setSupplyRef: (value: string) => void;
+  formProps: {
+    provider: (typeof chargingProviders)[number];
+    supplyRef: string;
+    period: SessionProps['data']['period'];
+    preview: (result: ChargingPreview) => void;
+  };
+  preview: ChargingPreview | null;
+}) {
+  return (
+    <section className="panel">
+      <h2>Charging source</h2>
+      <Selection
+        label="Electricity supply"
+        value={supplyRef}
+        change={setSupplyRef}
+        options={supplies
+          .filter((supply) => supply.fuel === 'electricity')
+          .map((supply) => ({ value: supply.ref, label: supply.label }))}
+      />
+      <Selection
+        label="Charging integration"
+        value={providerId}
+        change={setProviderId}
+        options={chargingProviders.map((item) => ({ value: item.id, label: item.name }))}
+      />
+      <p className="muted">{provider.description}</p>
+      {supplyRef &&
+        (provider.method === 'file' ? (
+          <FileChargingForm key={provider.id} {...formProps} />
+        ) : (
+          <ApiChargingForm key={provider.id} {...formProps} />
+        ))}
+      {preview && <MappingPreview preview={preview} />}
+    </section>
+  );
+}
+
+function ChargingSessions({
+  sessions,
+  change,
+}: {
+  sessions: import('../core/types').Charging[];
+  change: (sessions: import('../core/types').Charging[]) => void;
+}) {
+  return (
+    <section className="panel">
+      <h2>Review {sessions.length} sessions</h2>
+      <ChargingReview sessions={sessions} change={change} />
+    </section>
   );
 }
 

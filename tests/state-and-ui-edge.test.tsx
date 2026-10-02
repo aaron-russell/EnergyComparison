@@ -28,6 +28,7 @@ const baseData = (patch: Partial<SessionData> = {}): SessionData => ({
   estimated: null,
   tariffs: structuredClone(exampleTariffs),
   baselineId: exampleTariffs[0].id,
+  isDemo: false,
   ...patch,
 });
 const preview: ChargingPreview = { sessions: [], mapping: [], notices: [] };
@@ -138,17 +139,31 @@ describe('tariff and results UI', () => {
 
   it('renders tariff results, monthly chart and component details', () => {
     const result = replay(exampleTariffs[0], syntheticReadings(period), syntheticSupplies, period);
-    render(
+    const alternative = replay(
+      exampleTariffs[1],
+      syntheticReadings(period),
+      syntheticSupplies,
+      period,
+    );
+    const view = render(
       <ReplayResults
-        results={[result]}
+        results={[result, alternative]}
         tariffs={exampleTariffs}
         baselineId={exampleTariffs[0].id}
       />,
     );
     expect(screen.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible();
     expect(screen.getByRole('img', { name: /Monthly cost comparison/ })).toBeVisible();
-    fireEvent.click(screen.getByText(/monthly and component breakdown/));
-    expect(screen.getByText(/Band rounding residue/)).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Monthly difference from baseline' })).toBeVisible();
+    expect(screen.getAllByText('Example overnight tariff').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByText(/monthly and component breakdown/)[0]);
+    expect(screen.getAllByText(/Band rounding residue/).length).toBeGreaterThan(0);
+    const zero = { ...result, total: '0', energy: { electricity: '0', gas: '0' } };
+    view.rerender(
+      <ReplayResults results={[zero]} tariffs={exampleTariffs} baselineId={zero.tariffId} />,
+    );
+    expect(screen.getByText('0% vs baseline')).toBeVisible();
+    expect(screen.queryByRole('img', { name: 'Monthly difference from baseline' })).toBeNull();
   });
 });
 

@@ -1,3 +1,8 @@
+---
+title: Versions | Energy Replay
+description: Track the published Energy Replay handbook version and documented release changes.
+---
+
 # Versions
 
 The published handbook is built from the same commit as the application. The navigation version is

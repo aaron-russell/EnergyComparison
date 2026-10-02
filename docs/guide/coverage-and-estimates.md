@@ -1,3 +1,8 @@
+---
+title: Coverage and estimates | Energy Replay
+description: Understand observed coverage, missing intervals and explicitly labelled energy estimates.
+---
+
 # Coverage and estimates
 
 The coverage table reports observed intervals, expected intervals, and observed kWh for every supply
