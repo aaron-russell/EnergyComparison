@@ -34,7 +34,6 @@ client work.
 
 - GitHub: [aaron-russell/EnergyComparison](https://github.com/aaron-russell/EnergyComparison)
 - Website: [aaron-russell.co.uk](https://aaron-russell.co.uk)
-- LinkedIn: **Owner to supply the profile URL**
 - Public contact: use the [GitHub repository](https://github.com/aaron-russell/EnergyComparison)
   for non-sensitive project questions. Do not post credentials, meter identifiers, or real
   consumption data in public issues.
