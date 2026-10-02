@@ -1,3 +1,8 @@
+---
+title: Architecture and complexity boundaries | Energy Replay
+description: Understand the provider-independent calculation core, adapters and trust boundaries in Energy Replay.
+---
+
 # Architecture and complexity boundaries
 
 The calculation engine accepts only anonymous, provider-independent data. Adapters own credentials,

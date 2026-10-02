@@ -1,3 +1,8 @@
+---
+title: Calculation assumptions | Energy Replay
+description: Review Energy Replay's time, decimal arithmetic, estimation and tariff calculation assumptions.
+---
+
 # Calculation assumptions
 
 ## Boundaries and money

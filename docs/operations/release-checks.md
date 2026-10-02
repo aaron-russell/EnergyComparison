@@ -1,3 +1,8 @@
+---
+title: Release checks | Energy Replay
+description: Verify automated quality, hosted behavior and authenticated provider compatibility before release.
+---
+
 # Release checks
 
 Run the automated checks first:
