@@ -34,3 +34,8 @@ handbook version follows the application package version: **v0.1.0**.
 Use the search box to find a concept, or start with the [user journey](/guide/using-the-app). If you
 are changing the code, read the [development workflow](/guide/development) before the relevant
 [adapter guide](/guide/adding-an-adapter).
+
+## About this project
+
+Read [about the author and Russell Tech](/about), the [Energy Replay project case study](/projects/energy-replay),
+the [editorial policy](/editorial-policy), [privacy policy](/privacy), or [contact guidance](/contact).

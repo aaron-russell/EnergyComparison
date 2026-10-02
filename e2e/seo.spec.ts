@@ -60,6 +60,9 @@ test('documentation exposes unique SEO metadata and breadcrumbs under the existi
   expect(graph['@graph'].map((node: { '@type': string }) => node['@type'])).toEqual([
     'WebSite',
     'BreadcrumbList',
+    'Person',
+    'Organization',
+    'TechArticle',
   ]);
 });
 
