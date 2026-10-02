@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 function htmlFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
-    return entry.isDirectory() ? htmlFiles(path) : path.endsWith('.html') ? [path] : [];
+    return entry.isDirectory() ? htmlFiles(path) : entry.name.endsWith('.html') ? [path] : [];
   });
 }
 
@@ -18,11 +18,19 @@ for (const file of htmlFiles('dist/docs')) {
     }
   }
 }
-const path = existsSync('dist/_headers') ? 'dist/_headers' : 'public/_headers';
-const headers = readFileSync(path, 'utf8');
-const updated = headers.replace(
-  /(?<=\/docs\/\*\n {2}Content-Security-Policy: .*?script-src 'self')(?: [^;]*)?(?=;)/,
-  ` ${[...hashes].join(' ')}`,
-);
 
-if (updated !== headers) writeFileSync('dist/_headers', updated);
+if (!hashes.size) throw new Error('Could not find VitePress inline scripts in dist/docs');
+
+const path = 'dist/_headers';
+const headers = readFileSync('public/_headers', 'utf8');
+const cspPattern =
+  /(\/docs\/\*\n(?: {2}! Content-Security-Policy\n)? {2}Content-Security-Policy: .*?script-src 'self')(?: [^;]*)?(?=;)/;
+if (!cspPattern.test(headers)) {
+  throw new Error('Could not find the /docs/* Content-Security-Policy');
+}
+const updated = headers.replace(cspPattern, `$1 ${[...hashes].join(' ')}`);
+
+for (const hash of hashes) {
+  if (!updated.includes(hash)) throw new Error(`Missing generated CSP hash: ${hash}`);
+}
+writeFileSync(path, updated);
