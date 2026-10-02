@@ -635,6 +635,15 @@ footer {
 footer span {
   float: right;
 }
+.footer-links {
+  display: inline-flex;
+  gap: 0.8rem;
+  margin-left: 1rem;
+}
+.footer-links a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
 .skip-link {
   position: fixed;
   top: -80px;

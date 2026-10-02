@@ -1,9 +1,22 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-const html = readFileSync('dist/docs/index.html', 'utf8');
-const hashes = [...html.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/gi)].map(
-  ([, script]) => `'sha256-${createHash('sha256').update(script).digest('base64')}'`,
+function htmlFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    return entry.isDirectory() ? htmlFiles(path) : path.endsWith('.html') ? [path] : [];
+  });
+}
+
+const scripts = htmlFiles('dist/docs').flatMap((path) => {
+  const html = readFileSync(path, 'utf8');
+  return [...html.matchAll(/<script(?: id="[^"]+")?>([\s\S]*?)<\/script>/gi)].map(
+    ([, script]) => script,
+  );
+});
+const hashes = [...new Set(scripts)].map(
+  (script) => `'sha256-${createHash('sha256').update(script).digest('base64')}'`,
 );
 const path = existsSync('dist/_headers') ? 'dist/_headers' : 'public/_headers';
 const headers = readFileSync(path, 'utf8');
