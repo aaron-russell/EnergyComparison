@@ -31,6 +31,7 @@ export default defineConfig({
     logo: '/logo.svg',
     siteTitle: 'Energy Replay',
     nav: [
+      { text: 'Open app', link: '/' },
       { text: 'Guide', link: '/guide/using-the-app' },
       { text: 'Extend', link: '/guide/adding-an-adapter' },
       { text: 'Operations', link: '/operations/cloudflare-pages' },

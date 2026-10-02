@@ -57,6 +57,9 @@ export function Shell({ step, navigate, reset, theme, toggleTheme, children, con
             Under your control.
           </p>
           <span className="badge">PRIVACY FIRST</span>
+          <a className="docs-link" href="/docs/">
+            Read the documentation
+          </a>
         </div>
       </aside>
       <div className="workspace">

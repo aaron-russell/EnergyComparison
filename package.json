@@ -12,6 +12,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs --outDir dist/docs && node scripts/update-docs-csp.mjs",
     "docs:check": "npm run docs:build && node scripts/check-docs.mjs",
+    "audit:links": "npm run build && node scripts/audit-internal-links.mjs",
     "build": "npm run build:app && npm run docs:build && node scripts/generate-sitemap.mjs",
     "typecheck": "tsc -b",
     "test": "vitest run",
@@ -23,7 +24,7 @@
     "lint:fix": "oxlint . --type-aware --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-docs.mjs",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && node scripts/check-docs.mjs && node scripts/audit-internal-links.mjs",
     "schema:generate": "node scripts/generate-validator.mjs",
     "prebuild": "npm run schema:generate"
   },

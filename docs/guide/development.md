@@ -26,6 +26,9 @@ npm run test:e2e
 npm run check
 ```
 
+Run `npm run audit:links` to rebuild the site and write the crawlable URL, internal-link, depth,
+alias, breadcrumb, and related-content report to `dist/internal-link-audit.json`.
+
 `npm run build` produces the app at `dist/` and the handbook at `dist/docs/`. Use the preview server to
 check both surfaces together. `npm run check` is the expected pre-PR command.
 
