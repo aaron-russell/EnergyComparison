@@ -1,18 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { coverageRows, type CoverageRow } from '../core/coverage';
 import type { BillTotal } from '../core/estimate';
 import type { SessionProps } from '../state/session';
 import { useJob } from '../state/use-job';
+import { useCoverageUi } from '../state/use-session-ui';
 import { ErrorNotice, NextButton, OperationStatus, PageHeading } from '../components/Shared';
 
-export function CoveragePage({ data, update, next }: SessionProps) {
+export function CoveragePage({ data, update, next, ui, updateUi }: SessionProps) {
   const rows = useMemo(
     () => coverageRows(data.readings, data.supplies, data.period),
     [data.readings, data.supplies, data.period],
   );
-  const [bills, setBills] = useState<BillTotal[]>([]);
-  const [uniform, setUniform] = useState(false);
+  const { bills, uniform, setBills, setUniform } = useCoverageUi(ui, updateUi);
   const job = useJob();
   const changeBill = (row: CoverageRow, kWh: string) => {
     const others = bills.filter(

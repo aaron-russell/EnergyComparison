@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Shell } from './components/Shell';
 import { SeoMetadata } from './components/SeoMetadata';
 const ConnectionPage = lazy(() =>
@@ -20,6 +20,11 @@ const ComparePage = lazy(() =>
   import('./pages/Compare').then((module) => ({ default: module.ComparePage })),
 );
 import { useSession } from './state/use-session';
+import {
+  clearSessionSnapshot,
+  loadSessionSnapshot,
+  saveSessionSnapshot,
+} from './state/session-storage';
 
 function initialTheme() {
   try {
@@ -29,9 +34,25 @@ function initialTheme() {
   }
 }
 export default function App({ reset }: { reset: () => void }) {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => loadSessionSnapshot()?.step ?? 0);
   const [theme, setTheme] = useState(initialTheme);
   const session = useSession();
+  useEffect(() => {
+    const hasProgress =
+      step > 0 ||
+      session.data.supplies.length > 0 ||
+      session.data.readings.length > 0 ||
+      session.data.charging.length > 0 ||
+      session.data.estimated !== null ||
+      session.data.baselineId !== '' ||
+      session.data.isDemo ||
+      session.ui.tariffs.draft !== null ||
+      session.ui.coverage.bills.length > 0;
+    if (!hasProgress) {
+      return;
+    }
+    saveSessionSnapshot({ version: 1, step, data: session.data, ui: session.ui });
+  }, [step, session.data, session.ui]);
   const navigate = (next: number) => {
     setStep(next);
     document.getElementById('main')?.focus();
@@ -45,10 +66,16 @@ export default function App({ reset }: { reset: () => void }) {
       /* Theme remains usable without storage. */
     }
   };
+  const clearSession = () => {
+    clearSessionSnapshot();
+    reset();
+  };
   const props = {
     data: session.data,
     update: session.update,
     next: () => navigate(Math.min(step + 1, 5)),
+    ui: session.ui,
+    updateUi: session.updateUi,
   };
   return (
     <div data-theme={theme}>
@@ -56,7 +83,7 @@ export default function App({ reset }: { reset: () => void }) {
       <Shell
         step={step}
         navigate={navigate}
-        reset={reset}
+        reset={clearSession}
         theme={theme}
         toggleTheme={toggleTheme}
         connected={!!session.connection}

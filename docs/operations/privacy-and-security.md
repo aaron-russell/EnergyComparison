@@ -5,8 +5,9 @@ description: Review Energy Replay's browser-only data handling, provider transpo
 
 # Privacy and security
 
-Imported readings, credentials, account connections, and charging records remain in the active browser
-session. Only explicitly saved tariff definitions and theme preference persist locally. Tariff exports
+Imported readings and charging records remain in the active browser tab session so refresh can restore
+progress. Credentials and account connections remain memory-only and are never stored. Only explicitly
+saved tariff definitions and theme preference persist locally. Tariff exports
 contain definitions only. The application uses only Cloudflare Web Analytics for privacy-focused
 performance and usage measurement; there is no other analytics, service worker, remote font,
 sensitive logging, or server-side credential proxy in the application.

@@ -92,7 +92,8 @@ Reference pages cover the [adapter contracts](docs/reference/contracts.md), [nor
 [deployment](docs/operations/cloudflare-pages.md), and [release checks](docs/operations/release-checks.md).
 
 Only explicitly saved tariffs and the theme preference persist. Exports contain tariffs only.
-Refresh, page exit and Clear session dispose of imports, credentials, connections and workers.
+Refresh keeps non-credential progress in the current tab so the journey can resume. Page exit and
+Clear session dispose of imports, credentials, connections and workers.
 The application uses only Cloudflare Web Analytics for privacy-focused performance and usage
 measurement; it has no other analytics, service worker, sensitive logging or remote fonts.
 

@@ -18,9 +18,11 @@ readings against the tariff definitions you provide.
 5. **Enter tariffs**: select a baseline and add at least one alternative.
 6. **Compare** identical supplies, dates, and energy, then inspect monthly, component, and band results.
 
-The browser session owns imported readings, credentials, connections, and charging data. Refreshing,
-leaving the page, or using **Clear session** removes them. Only explicitly saved tariff definitions
-and the theme preference use local storage.
+The browser tab session owns imported readings, charging data, journey progress, and in-progress
+form values so a refresh can resume the workflow. Credentials and live provider connections remain
+memory-only and are never stored; reconnect after a refresh when a live provider is required.
+Leaving the tab or using **Clear session** removes the progress. Only explicitly saved tariff
+definitions and the theme preference use local storage.
 
 ## Start locally
 

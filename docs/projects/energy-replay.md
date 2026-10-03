@@ -26,7 +26,8 @@ options.
   validator.
 - Synthetic fixtures and Playwright workflows provide a safe, repeatable test path without real
   accounts or consumption data.
-- The browser session holds imported readings, credentials, connections, and charging data. Only
+- The browser tab session holds imported readings, charging data, and workflow progress. Credentials
+  and live connections remain memory-only and are never stored. Only
   explicitly saved tariff definitions and the theme preference are stored locally.
 
 ## Delivered outcomes

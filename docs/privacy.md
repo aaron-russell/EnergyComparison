@@ -12,9 +12,10 @@ repository. It was reviewed on 2 October 2026.
 
 ## Energy Replay application
 
-Imported readings, credentials, account connections, and charging records remain in the active
-browser session. Refreshing, leaving the page, or using **Clear session** removes them. Only
-explicitly saved tariff definitions and the dark/light theme use local storage. Tariff exports
+Imported readings and charging records remain in the active browser tab session so a refresh can
+restore progress. Credentials and account connections remain memory-only and are never stored.
+Leaving the tab or using **Clear session** removes the progress. Only explicitly saved tariff definitions
+and the dark/light theme use local storage. Tariff exports
 contain tariff definitions only, never consumption, account, meter, or device data.
 
 The application uses Cloudflare Web Analytics as configured in the repository for privacy-focused

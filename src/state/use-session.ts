@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import type { EnergyConnection } from '../adapters/contracts';
 import { previousYear } from '../core/time';
 import { savedTariffs } from './tariff-storage';
-import type { SessionData } from './session';
+import type { SessionData, SessionUi } from './session';
+import { loadSessionSnapshot } from './session-storage';
 import {
   syntheticCharging,
   syntheticReadings,
@@ -11,6 +12,7 @@ import {
 } from '../fixtures/synthetic';
 
 export function useSession() {
+  const snapshot = loadSessionSnapshot();
   const [connection, setConnection] = useState<EnergyConnection | null>(null);
   const [data, setData] = useState<SessionData>(() => ({
     period: previousYear(),
@@ -19,16 +21,27 @@ export function useSession() {
     conflicts: 0,
     charging: [],
     estimated: null,
-    tariffs: savedTariffs(),
+    tariffs: snapshot?.data.tariffs ?? savedTariffs(),
     baselineId: '',
     isDemo: false,
+    ...snapshot?.data,
   }));
+  const [ui, setUi] = useState<SessionUi>(
+    () =>
+      snapshot?.ui ?? {
+        import: { start: '', end: '', selected: [] },
+        coverage: { bills: [], uniform: false },
+        charging: { providerId: 'synthetic', supplyRef: '', power: '7' },
+        tariffs: { draft: null, postcode: '', region: '' },
+      },
+  );
   useEffect(() => () => connection?.disconnect(), [connection]);
   const update = (patch: Partial<SessionData> | ((current: SessionData) => Partial<SessionData>)) =>
     setData((current) => ({
       ...current,
       ...(typeof patch === 'function' ? patch(current) : patch),
     }));
+  const updateUi = (patch: Partial<SessionUi>) => setUi((current) => ({ ...current, ...patch }));
   const connected = (next: EnergyConnection) => {
     setConnection(next);
     if (data.isDemo) {
@@ -62,5 +75,5 @@ export function useSession() {
       isDemo: true,
     });
   };
-  return { data, update, connection, connected, loadDemo };
+  return { data, update, ui, updateUi, connection, connected, loadDemo };
 }
