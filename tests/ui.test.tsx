@@ -237,6 +237,7 @@ describe('shared components and forms', () => {
     );
     const input = screen.getByLabelText('Charging file');
     fireEvent.change(input, { target: { files: [new File(['bad'], 'bad.csv')] } });
+    expect(screen.getByText('Selected file: bad.csv')).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Preview mapping and sessions' })).toBeEnabled(),
     );

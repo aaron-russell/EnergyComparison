@@ -18,31 +18,39 @@ type Props = {
 };
 export function FileChargingForm({ provider, supplyRef, preview }: Props) {
   const [text, setText] = useState('');
+  const [fileName, setFileName] = useState('');
   const [windowStart, setWindowStart] = useState('');
   const [windowEnd, setWindowEnd] = useState('');
+  const fileInput = useRef<HTMLInputElement>(null);
   const operation = useOperation();
   const parse = () =>
     operation.run(async (context) => {
       const result = await provider.parse!(text, { supplyRef, windowStart, windowEnd }, context);
       preview(result);
       setText('');
+      setFileName('');
+      if (fileInput.current) {
+        fileInput.current.value = '';
+      }
     });
   return (
     <div className="fields">
       <label className="field">
         Charging file
         <input
+          ref={fileInput}
           type="file"
           accept={provider.capabilities.files.map((format) => `.${format}`).join(',')}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) {
+              setFileName(file.name);
               void file.text().then(setText);
             }
-            event.target.value = '';
           }}
         />
       </label>
+      {fileName && <p className="muted">Selected file: {fileName}</p>}
       <p className="muted">
         Recognised formats: {provider.capabilities.files.join(', ')}. Files remain in memory. Large
         or invalid files are rejected.
