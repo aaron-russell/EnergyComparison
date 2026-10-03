@@ -52,7 +52,7 @@ export function useChargingUi(
     initialProviderId(saved?.providerId, defaultProviderId),
   );
   const [supplyRef, setSupplyRefState] = useState(
-    saved?.supplyRef ?? data.supplies.find((supply) => supply.fuel === 'electricity')?.ref ?? '',
+    saved?.supplyRef || data.supplies.find((supply) => supply.fuel === 'electricity')?.ref || '',
   );
   const [power, setPowerState] = useState(saved?.power ?? '7');
   const setProviderId = (value: string) => {
