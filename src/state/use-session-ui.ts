@@ -48,7 +48,9 @@ export function useChargingUi(
   defaultProviderId: string,
 ) {
   const saved = ui?.charging;
-  const [providerId, setProviderIdState] = useState(saved?.providerId ?? defaultProviderId);
+  const [providerId, setProviderIdState] = useState(
+    initialProviderId(saved?.providerId, defaultProviderId),
+  );
   const [supplyRef, setSupplyRefState] = useState(
     saved?.supplyRef ?? data.supplies.find((supply) => supply.fuel === 'electricity')?.ref ?? '',
   );
@@ -66,6 +68,10 @@ export function useChargingUi(
     updateUi?.({ charging: { providerId, supplyRef, power: value } });
   };
   return { providerId, supplyRef, power, setProviderId, setSupplyRef, setPower };
+}
+
+function initialProviderId(saved: string | undefined, fallback: string): string {
+  return saved && saved !== 'synthetic' ? saved : fallback;
 }
 
 export function useTariffUi(ui: SessionUi | undefined, updateUi: UpdateUi) {

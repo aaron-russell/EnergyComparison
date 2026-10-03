@@ -164,10 +164,14 @@ test('combined production build serves the app and handbook', async ({ page }) =
   ).toEqual([]);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/docs/calculations.html');
-  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await expect(
+    page.locator('#VPSidebarNav').getByRole('link', { name: 'Adapter contracts', exact: true }),
+  ).toBeVisible();
   await page.getByRole('link', { name: 'Architecture', exact: true }).click();
   await expect(page).toHaveURL(/\/docs\/architecture\.html$/);
-  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await expect(
+    page.locator('#VPSidebarNav').getByRole('link', { name: 'Adapter contracts', exact: true }),
+  ).toBeVisible();
   await page.goto('/docs/');
   await page.getByRole('link', { name: 'Use the app' }).click();
   await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
@@ -196,6 +200,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
 
 async function syntheticImport(page: Page) {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
   await page.getByRole('button', { name: 'Choose import period' }).click();
@@ -214,6 +219,7 @@ async function compareSyntheticPeriod(
   electricityOnly = false,
 ) {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
   await page.getByRole('button', { name: 'Choose import period' }).click();
@@ -231,11 +237,13 @@ async function compareSyntheticPeriod(
     await expect(page.getByText('Generating synthetic intervals', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
   }
+  await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0, { timeout: 120000 });
   await expect(page.getByRole('button', { name: 'Review coverage' })).toBeEnabled();
   await page.getByRole('button', { name: 'Review coverage' }).click();
   await page.getByRole('button', { name: 'Review optional EV charging' }).click();
   await page.getByRole('button', { name: 'Continue to tariffs' }).click();
   await page.getByRole('button', { name: 'Load synthetic examples' }).click();
+  await expect(page.getByText('25.00p/kWh · 49.00p/day')).toBeVisible();
   await page.getByRole('button', { name: 'Use as baseline' }).first().click();
   await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
   if (electricityOnly) {
