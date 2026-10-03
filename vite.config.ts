@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
@@ -23,6 +23,22 @@ const headerBlocks = readFileSync(new URL('./public/_headers', import.meta.url),
       });
     return { path, headers, detached };
   });
+
+const criticalLoadingStyle = readFileSync(
+  new URL('./src/critical-loading.css', import.meta.url),
+  'utf8',
+);
+const criticalLoadingStyleHash = `'sha256-${createHash('sha256')
+  .update(criticalLoadingStyle)
+  .digest('base64')}'`;
+
+function addCriticalStyleHash(csp: string) {
+  return csp.replace(/style-src ([^;]+)/, (match, sources: string) =>
+    sources.includes(criticalLoadingStyleHash)
+      ? match
+      : `style-src ${sources} ${criticalLoadingStyleHash}`,
+  );
+}
 
 const headersFor = (path: string) => {
   const common = headerBlocks.find((block) => block.path === '/*');
@@ -53,6 +69,9 @@ try {
 
 const previewHeadersFor = (path: string) => {
   const headers = headersFor(path);
+  if (!path.startsWith('/docs') && headers['Content-Security-Policy']) {
+    headers['Content-Security-Policy'] = addCriticalStyleHash(headers['Content-Security-Policy']);
+  }
   if (path.startsWith('/docs/') && docsHeaders['Content-Security-Policy']) {
     headers['Content-Security-Policy'] = docsHeaders['Content-Security-Policy'];
   }
@@ -64,15 +83,34 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'preload-app-stylesheet',
-      transformIndexHtml: {
-        order: 'post',
-        handler(html) {
-          return html.replace(
-            /<link rel="stylesheet" crossorigin href="([^"]+)">/g,
-            '<link rel="preload" as="style" crossorigin href="$1">',
-          );
-        },
+      name: 'inline-critical-loading-style',
+      transformIndexHtml(html) {
+        return {
+          html,
+          tags: [
+            {
+              tag: 'style',
+              attrs: { id: 'critical-loading-style' },
+              children: criticalLoadingStyle,
+              injectTo: 'head',
+            },
+          ],
+        };
+      },
+      generateBundle(_options, bundle) {
+        const headers = Object.values(bundle).find(
+          (asset) => asset.type === 'asset' && asset.fileName === '_headers',
+        );
+        if (headers?.type === 'asset') {
+          headers.source = addCriticalStyleHash(String(headers.source));
+        }
+      },
+      writeBundle(options) {
+        const outputDirectory = options.dir ?? new URL('./dist/', import.meta.url).pathname;
+        const headersPath = `${outputDirectory.replace(/\/$/, '')}/_headers`;
+        if (existsSync(headersPath)) {
+          writeFileSync(headersPath, addCriticalStyleHash(readFileSync(headersPath, 'utf8')));
+        }
       },
     },
     {
