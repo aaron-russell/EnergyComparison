@@ -1,9 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { LoadingSkeleton } from './components/LoadingSkeleton';
 import { Shell } from './components/Shell';
 import { SeoMetadata } from './components/SeoMetadata';
-const ConnectionPage = lazy(() =>
-  import('./pages/Connection').then((module) => ({ default: module.ConnectionPage })),
-);
+import { ConnectionPage } from './pages/Connection';
 const ImportPage = lazy(() =>
   import('./pages/Import').then((module) => ({ default: module.ImportPage })),
 );
@@ -53,6 +52,9 @@ export default function App({ reset }: { reset: () => void }) {
     }
     saveSessionSnapshot({ version: 1, step, data: session.data, ui: session.ui });
   }, [step, session.data, session.ui]);
+  useEffect(() => {
+    document.documentElement.dataset.appReady = 'true';
+  }, []);
   const navigate = (next: number) => {
     setStep(next);
     document.getElementById('main')?.focus();
@@ -88,7 +90,7 @@ export default function App({ reset }: { reset: () => void }) {
         toggleTheme={toggleTheme}
         connected={!!session.connection}
       >
-        <Suspense fallback={<p role="status">Opening replay step…</p>}>
+        <Suspense fallback={<LoadingSkeleton />}>
           {step === 0 && (
             <ConnectionPage
               connection={session.connection}

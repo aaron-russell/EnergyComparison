@@ -1,0 +1,195 @@
+#app-loading-skeleton {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  background: #151518;
+  color: #f2f0f3;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    visibility 180ms ease;
+}
+
+html[data-app-ready] #app-loading-skeleton {
+  opacity: 0;
+  visibility: hidden;
+  display: none;
+}
+
+.loading-skeleton-shell {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+}
+
+.loading-skeleton-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 1.25rem;
+  padding: 2rem 1.5rem;
+  background: #1d1d21;
+  border-right: 1px solid #34343a;
+}
+
+.loading-skeleton-brand {
+  font:
+    700 1.05rem/1.2 system-ui,
+    sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.loading-skeleton-block {
+  border-radius: 0.45rem;
+  background: linear-gradient(100deg, #2a2a30 20%, #38383f 40%, #2a2a30 60%);
+  background-size: 200% 100%;
+  animation: loading-skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.loading-skeleton-nav {
+  width: 75%;
+  height: 0.75rem;
+}
+
+.loading-skeleton-workspace {
+  min-width: 0;
+}
+
+.loading-skeleton-header {
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 2.5rem;
+  border-bottom: 1px solid #34343a;
+}
+
+.loading-skeleton-header-line {
+  width: min(14rem, 40%);
+  height: 0.8rem;
+}
+
+.loading-skeleton-header-action {
+  width: 5rem;
+  height: 2rem;
+}
+
+.loading-skeleton-main {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 3rem 2.5rem 5rem;
+}
+
+.loading-skeleton-heading {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 2.25rem;
+}
+
+.loading-skeleton-heading-line {
+  width: min(30rem, 75%);
+  height: 2.4rem;
+}
+
+.loading-skeleton-subheading-line {
+  width: min(38rem, 90%);
+  height: 1rem;
+}
+
+.loading-skeleton-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(15rem, 0.8fr);
+  gap: 1.5rem;
+}
+
+.loading-skeleton-panel {
+  min-height: 18rem;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #202025;
+  border: 1px solid #34343a;
+  border-radius: 0.8rem;
+}
+
+.loading-skeleton-panel-title {
+  width: 55%;
+  height: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.loading-skeleton-field {
+  width: 100%;
+  height: 3rem;
+}
+
+.loading-skeleton-button {
+  width: 9rem;
+  height: 3rem;
+  margin-top: 0.5rem;
+}
+
+.loading-skeleton-copy {
+  width: 95%;
+  height: 0.9rem;
+}
+
+.loading-skeleton-copy.short {
+  width: 65%;
+}
+
+@keyframes loading-skeleton-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .loading-skeleton-shell {
+    display: block;
+  }
+
+  .loading-skeleton-sidebar {
+    display: flex;
+    min-height: 4rem;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-right: 0;
+    border-bottom: 1px solid #34343a;
+  }
+
+  .loading-skeleton-nav {
+    display: none;
+  }
+
+  .loading-skeleton-header {
+    min-height: 3.5rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .loading-skeleton-main {
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .loading-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .loading-skeleton-explainer {
+    min-height: 10rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-skeleton-block {
+    animation: none;
+  }
+
+  #app-loading-skeleton {
+    transition: none;
+  }
+}

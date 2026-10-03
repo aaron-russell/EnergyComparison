@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build:app": "tsc -b && vite build",
+    "build:app": "tsc -b && vite build && node scripts/check-performance-budget.mjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs --outDir dist/docs && node scripts/update-docs-csp.mjs",
     "docs:check": "npm run docs:build && node scripts/check-docs.mjs",

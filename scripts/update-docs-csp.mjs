@@ -30,7 +30,18 @@ if (!cspPattern.test(headers)) {
 }
 const updated = headers.replace(cspPattern, `$1 ${[...hashes].join(' ')}`);
 
+const appHtml = readFileSync('dist/index.html', 'utf8');
+const criticalStyle = appHtml.match(/<style id="critical-loading-style">([\s\S]*?)<\/style>/)?.[1];
+if (!criticalStyle) throw new Error('Could not find the critical loading style');
+const criticalStyleHash = `'sha256-${createHash('sha256').update(criticalStyle).digest('base64')}'`;
+const appCspPattern = /(\/\*\n[\s\S]*? {2}Content-Security-Policy: .*?; style-src )([^;]+)/;
+const withCriticalStyleHash = updated.replace(
+  appCspPattern,
+  (_, prefix, sources) =>
+    `${prefix}${sources}${sources.includes(criticalStyleHash) ? '' : ` ${criticalStyleHash}`}`,
+);
+
 for (const hash of hashes) {
-  if (!updated.includes(hash)) throw new Error(`Missing generated CSP hash: ${hash}`);
+  if (!withCriticalStyleHash.includes(hash)) throw new Error(`Missing generated CSP hash: ${hash}`);
 }
-writeFileSync(path, updated);
+writeFileSync(path, withCriticalStyleHash);
