@@ -54,11 +54,45 @@
       data-energy-replay-seo="twitter:image"
       content="https://energy.russell-tech.co.uk/og-image.png"
     />
-    <link rel="preload" as="image" href="/og-image.png" />
     <meta name="theme-color" content="#151518" />
     <title>Connect your energy data | Energy Replay</title>
   </head>
   <body>
+    <div id="app-loading-skeleton" aria-hidden="true">
+      <div class="loading-skeleton-shell">
+        <aside class="loading-skeleton-sidebar">
+          <div class="loading-skeleton-brand">Energy Replay</div>
+          <div class="loading-skeleton-nav loading-skeleton-block"></div>
+          <div class="loading-skeleton-nav loading-skeleton-block"></div>
+          <div class="loading-skeleton-nav loading-skeleton-block"></div>
+        </aside>
+        <div class="loading-skeleton-workspace">
+          <header class="loading-skeleton-header">
+            <div class="loading-skeleton-block loading-skeleton-header-line"></div>
+            <div class="loading-skeleton-block loading-skeleton-header-action"></div>
+          </header>
+          <main class="loading-skeleton-main">
+            <div class="loading-skeleton-heading">
+              <div class="loading-skeleton-block loading-skeleton-heading-line"></div>
+              <div class="loading-skeleton-block loading-skeleton-subheading-line"></div>
+            </div>
+            <div class="loading-skeleton-grid">
+              <section class="loading-skeleton-panel">
+                <div class="loading-skeleton-block loading-skeleton-panel-title"></div>
+                <div class="loading-skeleton-block loading-skeleton-field"></div>
+                <div class="loading-skeleton-block loading-skeleton-field"></div>
+                <div class="loading-skeleton-block loading-skeleton-button"></div>
+              </section>
+              <aside class="loading-skeleton-panel loading-skeleton-explainer">
+                <div class="loading-skeleton-block loading-skeleton-panel-title"></div>
+                <div class="loading-skeleton-block loading-skeleton-copy"></div>
+                <div class="loading-skeleton-block loading-skeleton-copy short"></div>
+              </aside>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
     <noscript><a href="/docs/">Read the Energy Replay documentation</a></noscript>
     <script defer src="/analytics-loader.js"></script>

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const files = ['public/_headers', ...(existsSync('dist/_headers') ? ['dist/_headers'] : [])];
 const failures = [];
@@ -10,7 +11,10 @@ function parse(path) {
       const lines = block.split('\n');
       const headers = lines
         .filter((line) => line.startsWith('  ') && !line.trimStart().startsWith('! '))
-        .map((line) => line.slice(2).split(/:\s*/, 2));
+        .map((line) => {
+          const separator = line.indexOf(':');
+          return [line.slice(2, separator).trim(), line.slice(separator + 1).trim()];
+        });
       const detached = lines
         .filter((line) => line.trimStart().startsWith('! '))
         .map((line) => line.trimStart().slice(2));
@@ -65,6 +69,15 @@ for (const file of files) {
     failures.push(`${file}: API responses are cacheable`);
   if (blocks.filter((block) => block.path.includes('pages.dev')).length !== 2) {
     failures.push(`${file}: preview noindex rules are incomplete`);
+  }
+  if (file === 'dist/_headers' && existsSync('dist/index.html')) {
+    const html = readFileSync('dist/index.html', 'utf8');
+    const style = html.match(/<style id="critical-loading-style">([\s\S]*?)<\/style>/)?.[1];
+    const csp = value(common, 'Content-Security-Policy') ?? '';
+    const hash = style ? `'sha256-${createHash('sha256').update(style).digest('base64')}'` : null;
+    if (!hash || !csp.includes(hash)) {
+      failures.push(`${file}: critical loading style hash is missing from the app CSP`);
+    }
   }
 }
 
