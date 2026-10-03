@@ -2,6 +2,10 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './styles.css';
 
+document
+  .querySelector<HTMLLinkElement>('link[rel="preload"][as="style"]')
+  ?.setAttribute('rel', 'stylesheet');
+
 const container = document.getElementById('root')!;
 let root = createRoot(container);
 let session = 0;

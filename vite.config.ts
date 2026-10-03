@@ -64,6 +64,18 @@ export default defineConfig({
   plugins: [
     react(),
     {
+      name: 'preload-app-stylesheet',
+      transformIndexHtml: {
+        order: 'post',
+        handler(html) {
+          return html.replace(
+            /<link rel="stylesheet" crossorigin href="([^"]+)">/g,
+            '<link rel="preload" as="style" crossorigin href="$1">',
+          );
+        },
+      },
+    },
+    {
       name: 'path-aware-preview-headers',
       configurePreviewServer(server) {
         server.middlewares.use((request, response, next) => {
