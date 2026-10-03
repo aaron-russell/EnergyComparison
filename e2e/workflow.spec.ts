@@ -164,10 +164,11 @@ test('combined production build serves the app and handbook', async ({ page }) =
   ).toEqual([]);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/docs/calculations.html');
-  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  const sidebar = page.locator('#VPSidebarNav');
+  await expect(sidebar.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
   await page.getByRole('link', { name: 'Architecture', exact: true }).click();
   await expect(page).toHaveURL(/\/docs\/architecture\.html$/);
-  await expect(page.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
+  await expect(sidebar.getByRole('link', { name: 'Adapter contracts' })).toBeVisible();
   await page.goto('/docs/');
   await page.getByRole('link', { name: 'Use the app' }).click();
   await expect(page).toHaveURL(/\/docs\/guide\/using-the-app\.html$/);
