@@ -27,8 +27,14 @@ export function readRows(text: string): ImportRow[] {
       skipEmptyLines: 'greedy',
       transformHeader: normaliseHeader,
     });
-    if (result.errors.length) {
+    // Row length warnings are recoverable: exported CSVs often contain optional
+    // trailing columns or commas in fields. Quote errors can shift every later
+    // column, so those still make the file unsafe to interpret.
+    if (result.errors.some(({ code }) => code === 'MissingQuotes' || code === 'InvalidQuotes')) {
       throw new Error('Invalid CSV');
+    }
+    if (!result.meta.fields?.some(Boolean)) {
+      throw new Error('CSV headers are missing');
     }
     return result.data;
   } catch {
