@@ -29,9 +29,25 @@ function excludedLocation(read: ColumnReader, context: ParseContext): boolean {
   return true;
 }
 
+function hasEnergy(row: ImportRow): boolean {
+  return [
+    'grid_kwh',
+    'kwh grid (home)',
+    'grid kwh',
+    'kwh',
+    'kwh consumed',
+    'total kwh consumed',
+    'energy',
+  ].some((name) => row[name]?.trim());
+}
+
 function parseRow(row: ImportRow, context: ParseContext): Charging | undefined {
   const read = columnReader(row, context.mapping);
   if (excludedLocation(read, context)) {
+    return undefined;
+  }
+  if (!hasEnergy(row)) {
+    context.notices.add('Rows without charging energy were excluded.');
     return undefined;
   }
   const period = chargingPeriod(read, context.options, context.notices);

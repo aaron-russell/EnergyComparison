@@ -8,6 +8,29 @@ import type { Charging, Reading } from '../src/core/types';
 
 const context = () => ({ signal: new AbortController().signal, progress: () => {} });
 const options = { supplyRef: 'home' };
+const podPointHeaders = [
+  'First name',
+  'Last name',
+  'Date',
+  'Plugged in',
+  'Charge start',
+  'Charging duration',
+  'Charge end',
+  'Plugged-in duration',
+  'Unplugged',
+  'Cost',
+  'Total kWh Consumed',
+  'kWh Grid (Home)',
+  'kWh Solar (Home)',
+  'Location type',
+  'Location',
+];
+const podPointRecord = (values: Record<string, string>) =>
+  Object.fromEntries(podPointHeaders.map((header) => [header, values[header] ?? '']));
+const podPointCsv = (records: Record<string, string>[], prefix = '') =>
+  `${prefix}${podPointHeaders.join(',')}\n${records
+    .map((record) => podPointHeaders.map((header) => record[header] ?? '').join(','))
+    .join('\n')}`;
 const session: Charging = {
   id: 'session',
   supplyRef: 'home',
@@ -56,6 +79,67 @@ describe('charging import and attribution', () => {
     expect(result.sessions[0].kWh).toBe('10');
     expect(result.sessions[0].provenance).toBe('grid');
     expect(result.mapping.some((column) => column.column === 'kwh grid (home)')).toBe(true);
+  });
+  it('accepts usable rows when optional CSV fields have inconsistent column counts', async () => {
+    const csv =
+      'Date,Start time,End time,Total kWh Consumed,kWh Grid (Home),Location type,Notes\n10/04/2024,11:25,14:52,30.12,10,home,Charge stopped, then restarted';
+    const result = await podPoint.parse!(csv, options, context());
+    expect(result.sessions).toHaveLength(1);
+    expect(result.sessions[0].kWh).toBe('10');
+  });
+  it('parses Pod Point activity timestamps with a repeated UTF-8 BOM', async () => {
+    const csv = podPointCsv(
+      [
+        podPointRecord({
+          Date: '10/04/2024',
+          'Charge start': '11:30',
+          'Charge end': '12:00',
+          'Total kWh Consumed': '2.5',
+          'Location type': 'Home',
+          Location: 'Home',
+        }),
+      ],
+      '\uFEFF\uFEFF',
+    );
+    const result = await podPoint.parse!(csv, options, context());
+    expect(result.sessions).toHaveLength(1);
+    expect(result.sessions[0]).toMatchObject({
+      start: '2024-04-10T10:30:00Z',
+      end: '2024-04-10T11:00:00Z',
+      kWh: '2.5',
+    });
+    expect(result.mapping.map(({ column }) => column)).toEqual([
+      'location type',
+      'charge start',
+      'charge end',
+      'date',
+      'total kwh consumed',
+    ]);
+    expect(JSON.stringify(result)).not.toMatch(/first name|last name|Location: Home/);
+  });
+  it('excludes short rows and home rows without energy while retaining valid sessions', async () => {
+    const csv = `${podPointCsv([
+      podPointRecord({
+        Date: '10/04/2024',
+        'Charge start': '11:30',
+        'Charge end': '12:00',
+        'Total kWh Consumed': '2.5',
+        'Location type': 'Home',
+        Location: 'Home',
+      }),
+      podPointRecord({
+        Date: '11/04/2024',
+        'Charge start': '11:30',
+        'Charge end': '12:00',
+        'Location type': 'Home',
+        Location: 'Home',
+      }),
+    ])}\n,,,,,,,,,£1.00`;
+    const result = await podPoint.parse!(csv, options, context());
+    expect(result.sessions).toHaveLength(1);
+    expect(result.sessions[0].kWh).toBe('2.5');
+    expect(result.notices).toContain('Rows without charging energy were excluded.');
+    expect(result.notices).toContain('Public and unrecognised locations excluded.');
   });
   it('requires a date-only window and rejects ambiguous local timestamps', async () => {
     const csv = 'Date,kWh Consumed,Location type\n06-03-2024,5.5 kWh,Home';

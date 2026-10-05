@@ -38,8 +38,8 @@ export function chargingPeriod(
   notices: Set<string>,
 ): Period {
   let period = {
-    start: read(['start', 'interval_start', 'start time'], 'Start'),
-    end: read(['end', 'interval_end', 'end time'], 'End'),
+    start: read(['start', 'interval_start', 'start time', 'charge start'], 'Start'),
+    end: read(['end', 'interval_end', 'end time', 'charge end'], 'End'),
   };
   const date = normaliseDate(read(['date'], 'Date'));
   if (!period.start && date) {
