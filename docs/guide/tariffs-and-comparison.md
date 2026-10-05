@@ -5,8 +5,9 @@ description: Build tariff definitions and compare identical historical usage acr
 
 # Tariffs and comparison
 
-There is no live tariff catalogue. Enter the rates you want to test, load synthetic examples, or import
-validated tariff JSON. Prices remain fixed throughout the historical replay.
+You can enter rates you want to test, load synthetic examples, import validated tariff JSON, or load
+open supplier offers from Tariff Tracker by postcode or electricity region. Prices remain fixed
+throughout the historical replay.
 
 ## Build tariffs
 
@@ -14,7 +15,8 @@ Add electricity bands that cover every half-hour of the week exactly once. A ban
 weekday numbers and a local start/end time; an end before the start crosses midnight. Add gas pricing
 when gas is selected, and enter standing charges, annual credit, renewable status, and optional EV rules.
 
-Choose one tariff as the baseline and add at least one alternative. Saving is explicit and stores tariff
+Choose one tariff as the baseline and add at least one alternative for a baseline comparison. The guided
+cheapest search can rank compatible offers without a current tariff. Saving is explicit and stores tariff
 definitions only on the device. Exported JSON never contains readings, accounts, credentials, or device data.
 
 Each tariff card shows the prices used by the replay: electricity and gas unit rates, standing charges,
@@ -32,6 +34,17 @@ electricity-band breakdowns.
 The annual or period total and monthly equivalent in the results are calculated from the same selected
 readings and dates for every tariff. They are the authoritative cost comparison; the prices shown on the
 tariff cards explain the inputs that produced those totals.
+
+## Guided cheapest search
+
+On the tariff step, enter a postcode and choose **Find cheapest for this usage**. The app resolves the
+electricity region, loads all returned offers compatible with the selected fuel scope, and replays the
+same readings against each offer in the browser. Results are ordered by calculated historical cost and
+labelled **Lowest replay**. Supplier, payment, term, exit-fee, source-date, and caveat information remains
+visible for checking before switching.
+
+This is not a complete market ranking, regulated advice, a supplier endorsement, or a guarantee of future
+savings. The postcode is sent to Tariff Tracker for region lookup; readings and results remain in memory.
 
 For the import format and validation rules, see the [tariff schema](/reference/tariff-schema). For rounding and
 EV adjustments, see [calculation assumptions](/calculations).

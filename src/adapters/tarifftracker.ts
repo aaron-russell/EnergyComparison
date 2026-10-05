@@ -33,8 +33,21 @@ type Envelope = {
 
 export type TariffTrackerResult = {
   tariffs: Tariff[];
+  offers: TariffTrackerOffer[];
   asOf?: string;
   caveats: string[];
+};
+
+export type TariffTrackerOffer = {
+  tariffId: string;
+  supplier: string;
+  tariff: string;
+  kind: TariffTrackerRow['kind'];
+  payment: string;
+  termMonths?: DecimalString | null;
+  exitFeeGbp?: DecimalString | null;
+  annualEstimateGbp: DecimalString;
+  closes?: string | null;
 };
 
 export type TariffTrackerLookup = {
@@ -257,6 +270,20 @@ function fromRow(row: TariffTrackerRow): Tariff {
   });
 }
 
+function offerFromRow(row: TariffTrackerRow): TariffTrackerOffer {
+  return {
+    tariffId: `tarifftracker:${identityHash(row)}`,
+    supplier: row.supplier,
+    tariff: row.tariff,
+    kind: row.kind,
+    payment: row.payment,
+    termMonths: row.term_months,
+    exitFeeGbp: row.exit_fee_gbp,
+    annualEstimateGbp: row.annual_est_gbp,
+    closes: row.closes,
+  };
+}
+
 function identityHash(row: TariffTrackerRow): string {
   const identity = [row.supplier, row.product_code, row.payment, row.region, row.fuel].join('|');
   let hash = 2166136261;
@@ -296,6 +323,7 @@ export async function fetchTariffs(
   const rows = result.rows ?? [];
   return {
     tariffs: rows.map(fromRow),
+    offers: rows.map(offerFromRow),
     asOf: result.as_of,
     caveats: result.caveats ?? [],
   };

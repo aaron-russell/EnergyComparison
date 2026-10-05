@@ -62,6 +62,9 @@ const data = (overrides: Partial<SessionData> = {}): SessionData => ({
   estimated: null,
   tariffs: structuredClone(exampleTariffs),
   baselineId: exampleTariffs[0].id,
+  tariffOffers: [],
+  tariffSource: null,
+  guidedCompare: false,
   isDemo: false,
   ...overrides,
 });
@@ -460,6 +463,48 @@ describe('page journeys', () => {
     );
     expect(screen.getByText('Synthetic supplier note')).toBeVisible();
     expect(update).toHaveBeenCalled();
+  });
+
+  it('starts the guided cheapest replay after loading open offers', async () => {
+    const update = vi.fn();
+    const next = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: { electricity_region: 'Yorkshire' } })),
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              rows: [
+                {
+                  supplier: 'Test Energy',
+                  tariff: 'Fixed',
+                  product_code: 'TEST',
+                  region: 'Yorkshire',
+                  fuel: 'dual',
+                  kind: 'fixed',
+                  payment: 'direct debit',
+                  unit_p_kwh: '25',
+                  standing_p_day: '50',
+                  gas_unit_p_kwh: '7',
+                  gas_standing_p_day: '30',
+                  annual_est_gbp: '1000',
+                },
+              ],
+            }),
+          ),
+        ),
+    );
+    render(<TariffsPage data={data({ tariffs: [] })} update={update} next={next} />);
+    fireEvent.change(screen.getByLabelText('Postcode'), { target: { value: 'L1 1AA' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find cheapest for this usage' }));
+    await waitFor(() => expect(next).toHaveBeenCalled());
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ guidedCompare: true, tariffOffers: expect.any(Array) }),
+    );
   });
 
   it('reports missing regions and empty Tariff Tracker catalogues', async () => {

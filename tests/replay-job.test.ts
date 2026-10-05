@@ -19,6 +19,9 @@ function session(tariffs: SessionData['tariffs'], baselineId: string): SessionDa
     estimated: null,
     tariffs,
     baselineId,
+    tariffOffers: [],
+    tariffSource: null,
+    guidedCompare: false,
     isDemo: false,
   };
 }
@@ -59,6 +62,17 @@ describe('replay tariff compatibility', () => {
     expect(() => prepareReplay(session([dual], dual.id), 'dual', 'observed', 'all')).toThrow(
       'alternative tariff',
     );
+  });
+
+  it('can rank compatible tariffs without a current baseline', () => {
+    const first = structuredClone(exampleTariffs[0]);
+    const second = { ...structuredClone(first), id: 'second' };
+    const job = prepareReplay(session([first, second], ''), 'dual', 'observed', 'all', false);
+
+    expect(job.kind === 'replay' && job.tariffs.map((tariff) => tariff.id)).toEqual([
+      first.id,
+      second.id,
+    ]);
   });
 });
 

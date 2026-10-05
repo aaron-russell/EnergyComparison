@@ -56,7 +56,7 @@ for the project’s publishing, privacy, and communication boundaries.
 
 ## Project scope
 
-Energy Replay compares the same selected readings against a baseline and alternatives entered by
-the user. It does not fetch a supplier catalogue, predict future bills, rank suppliers, or
-guarantee savings. See the [project case study](/projects/energy-replay) for implementation and
-delivered outcomes.
+Energy Replay compares the same selected readings against tariff definitions entered by the user or
+loaded from open Tariff Tracker data. Its guided search ranks compatible offers by historical replay
+cost; it does not predict future bills, provide regulated advice, endorse suppliers, or guarantee
+savings. See the [project case study](/projects/energy-replay) for implementation and delivered outcomes.

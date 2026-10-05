@@ -1,19 +1,33 @@
 import Decimal, { sum } from '../core/decimal';
 import type { Period, ReplayResult, Tariff } from '../core/types';
+import type { TariffTrackerOffer } from '../adapters/tarifftracker';
 
 const currency = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
 const money = (value: string) => currency.format(Number(value));
 const energy = (value: string) => `${Number(value).toFixed(0)} kWh`;
-type Props = { results: ReplayResult[]; tariffs: Tariff[]; baselineId: string; period?: Period };
+type Props = {
+  results: ReplayResult[];
+  tariffs: Tariff[];
+  baselineId: string;
+  period?: Period;
+  offers?: TariffTrackerOffer[];
+  source?: { region: string; asOf?: string; caveats: string[] } | null;
+};
 type ComponentKey = 'electricity' | 'gas' | 'standing' | 'credits' | 'evAdjustment';
 
-export function ReplayResults({ results, tariffs, baselineId }: Props) {
-  const baseline = results.find((result) => result.tariffId === baselineId) ?? results[0];
+export function ReplayResults({ results, tariffs, baselineId, offers = [], source }: Props) {
+  const ranked = [...results].sort((left, right) => {
+    const leftTotal = new Decimal(left.total);
+    const rightTotal = new Decimal(right.total);
+    return leftTotal.lessThan(rightTotal) ? -1 : leftTotal.greaterThan(rightTotal) ? 1 : 0;
+  });
+  const baseline = ranked.find((result) => result.tariffId === baselineId);
   const names = new Map(tariffs.map((tariff) => [tariff.id, tariff.name]));
-  const annual = results[0].complete && results[0].months.length === 12;
+  const annual = ranked[0].complete && ranked[0].months.length === 12;
   return (
     <div className="results">
-      <Dashboard results={results} baseline={baseline} names={names} annual={annual} />
+      <SourceNotice source={source} />
+      <Dashboard results={ranked} baseline={baseline} names={names} annual={annual} />
       <section className="panel">
         <div className="section-title">
           <div>
@@ -21,17 +35,50 @@ export function ReplayResults({ results, tariffs, baselineId }: Props) {
             <p>Identical period, supplies and energy for every tariff.</p>
           </div>
         </div>
-        <ResultsTable results={results} baseline={baseline} names={names} annual={annual} />
+        <ResultsTable
+          results={ranked}
+          baseline={baseline}
+          names={names}
+          annual={annual}
+          offers={offers}
+        />
       </section>
-      <MonthlyChart results={results} names={names} />
-      <DifferenceChart results={results} baseline={baseline} names={names} />
-      {results.map((result) => (
+      <MonthlyChart results={ranked} names={names} />
+      {baseline && <DifferenceChart results={ranked} baseline={baseline} names={names} />}
+      {ranked.map((result) => (
         <CostDetails
           key={result.tariffId}
           result={result}
           name={names.get(result.tariffId) ?? result.tariffId}
         />
       ))}
+    </div>
+  );
+}
+
+function SourceNotice({
+  source,
+}: {
+  source?: { region: string; asOf?: string; caveats: string[] } | null;
+}) {
+  if (!source) {
+    return null;
+  }
+  return (
+    <div className="notice" role="note">
+      <strong>Open tariff data · {source.region}</strong>
+      <p>
+        {source.asOf ? `Prices checked ${source.asOf.slice(0, 10)}. ` : ''}
+        The lowest result is a historical replay for this usage, not a guarantee of future savings
+        or a complete market ranking. Check supplier terms before switching.
+      </p>
+      {source.caveats.length > 0 && (
+        <ul className="muted">
+          {source.caveats.map((caveat) => (
+            <li key={caveat}>{caveat}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -43,18 +90,20 @@ function Dashboard({
   annual,
 }: {
   results: ReplayResult[];
-  baseline: ReplayResult;
+  baseline?: ReplayResult;
   names: Map<string, string>;
   annual: boolean;
 }) {
   const cheapest = results.reduce((best, result) =>
     new Decimal(result.total).lessThan(best.total) ? result : best,
   );
-  const saving = new Decimal(baseline.total).sub(cheapest.total);
-  const baselineMagnitude = new Decimal(baseline.total).abs();
-  const savingPercent = new Decimal(baseline.total).isZero()
-    ? '0'
-    : saving.div(baselineMagnitude).times(100).toFixed(1);
+  const reference = baseline ?? cheapest;
+  const saving = baseline ? new Decimal(baseline.total).sub(cheapest.total) : null;
+  const savingPercent = baseline
+    ? new Decimal(baseline.total).isZero()
+      ? '0'
+      : (saving?.div(new Decimal(baseline.total).abs()).times(100).toFixed(1) ?? null)
+    : null;
   return (
     <>
       <section className="dashboard-heading">
@@ -63,36 +112,63 @@ function Dashboard({
           <h2>{annual ? 'Annual usage and monthly cost' : 'Usage and cost for this period'}</h2>
           <p className="muted">A month-by-month view of the same usage on each tariff.</p>
         </div>
-        <span className="result-period">{baseline.days} local calendar days</span>
+        <span className="result-period">{reference.days} local calendar days</span>
       </section>
-      <section className="metric-grid" aria-label="Comparison summary">
-        <Metric
-          label="Baseline cost"
-          value={money(baseline.total)}
-          detail={names.get(baseline.tariffId)}
-        />
-        <Metric
-          label="Lowest replay"
-          value={money(cheapest.total)}
-          detail={names.get(cheapest.tariffId)}
-        />
-        <Metric
-          label="Potential difference"
-          value={money(saving.toFixed(2))}
-          detail={`${savingPercent}% vs baseline`}
-          positive={saving.greaterThan(0)}
-        />
-        <Metric
-          label="Energy replayed"
-          value={energy(
-            new Decimal(baseline.energy.electricity).add(baseline.energy.gas).toFixed(1),
-          )}
-          detail={`${energy(baseline.energy.electricity)} electricity · ${energy(baseline.energy.gas)} gas`}
-        />
-      </section>
-      <UsageSummary result={baseline} />
-      <ComponentChart result={baseline} name={names.get(baseline.tariffId) ?? 'Baseline'} />
+      <ComparisonMetrics
+        baseline={baseline}
+        cheapest={cheapest}
+        reference={reference}
+        names={names}
+        saving={saving}
+        savingPercent={savingPercent}
+      />
+      <UsageSummary result={reference} />
+      <ComponentChart result={reference} name={names.get(reference.tariffId) ?? 'Lowest replay'} />
     </>
+  );
+}
+
+function ComparisonMetrics({
+  baseline,
+  cheapest,
+  reference,
+  names,
+  saving,
+  savingPercent,
+}: {
+  baseline?: ReplayResult;
+  cheapest: ReplayResult;
+  reference: ReplayResult;
+  names: Map<string, string>;
+  saving: Decimal | null;
+  savingPercent: string | null;
+}) {
+  return (
+    <section className="metric-grid" aria-label="Comparison summary">
+      <Metric
+        label="Baseline cost"
+        value={baseline ? money(baseline.total) : 'Not supplied'}
+        detail={baseline ? names.get(baseline.tariffId) : 'Add your current tariff to compare'}
+      />
+      <Metric
+        label="Lowest replay"
+        value={money(cheapest.total)}
+        detail={names.get(cheapest.tariffId)}
+      />
+      <Metric
+        label="Potential difference"
+        value={saving ? money(saving.toFixed(2)) : '—'}
+        detail={savingPercent ? `${savingPercent}% vs baseline` : 'No baseline supplied'}
+        positive={saving?.greaterThan(0) ?? false}
+      />
+      <Metric
+        label="Energy replayed"
+        value={energy(
+          new Decimal(reference.energy.electricity).add(reference.energy.gas).toFixed(1),
+        )}
+        detail={`${energy(reference.energy.electricity)} electricity · ${energy(reference.energy.gas)} gas`}
+      />
+    </section>
   );
 }
 
@@ -448,11 +524,13 @@ function ResultsTable({
   baseline,
   names,
   annual,
+  offers,
 }: {
   results: ReplayResult[];
-  baseline: ReplayResult;
+  baseline?: ReplayResult;
   names: Map<string, string>;
   annual: boolean;
+  offers: TariffTrackerOffer[];
 }) {
   return (
     <div className="table-scroll" tabIndex={0}>
@@ -463,7 +541,7 @@ function ResultsTable({
             <th scope="col">Tariff</th>
             <th scope="col">{annual ? 'Annual cost' : 'Period total'}</th>
             <th scope="col">Monthly equivalent</th>
-            <th scope="col">Difference from baseline</th>
+            <th scope="col">{baseline ? 'Difference from baseline' : 'Offer details'}</th>
           </tr>
         </thead>
         <tbody>
@@ -471,17 +549,36 @@ function ResultsTable({
             <tr key={result.tariffId}>
               <th scope="row">
                 {names.get(result.tariffId)}
-                <small>{result.tariffId === baseline.tariffId ? 'Baseline' : 'Alternative'}</small>
+                <small>
+                  {result.tariffId === baseline?.tariffId
+                    ? 'Baseline'
+                    : result === results[0]
+                      ? 'Lowest replay'
+                      : 'Alternative'}
+                </small>
               </th>
               <td className="cost">{money(result.total)}</td>
               <td>{money(result.monthlyEquivalent)}</td>
-              <td>{money(new Decimal(result.total).sub(baseline.total).toFixed(2))}</td>
+              <td>
+                {baseline
+                  ? money(new Decimal(result.total).sub(baseline.total).toFixed(2))
+                  : formatOffer(offers.find((offer) => offer.tariffId === result.tariffId))}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
   );
+}
+
+function formatOffer(offer: TariffTrackerOffer | undefined): string {
+  if (!offer) {
+    return 'Imported tariff';
+  }
+  const term = offer.termMonths ? `${offer.termMonths}-month term` : 'Term not stated';
+  const exitFee = offer.exitFeeGbp ? ` · £${offer.exitFeeGbp} exit fee` : '';
+  return `${offer.kind} · ${offer.payment} · ${term}${exitFee}`;
 }
 
 function CostDetails({ result, name }: { result: ReplayResult; name: string }) {

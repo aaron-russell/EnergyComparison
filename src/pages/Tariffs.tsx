@@ -53,6 +53,8 @@ export function TariffsPage({ data, update, next, ui, updateUi }: SessionProps) 
         exportAll={() => exportTariffs(data.tariffs)}
         importFile={importFile}
         merge={merge}
+        next={next}
+        update={update}
         postcode={postcode}
         region={region}
         changeLocation={changeLocation}
@@ -139,6 +141,8 @@ function TariffToolbar({
   exportAll,
   importFile,
   merge,
+  next,
+  update,
   postcode,
   region,
   changeLocation,
@@ -148,6 +152,8 @@ function TariffToolbar({
   exportAll: () => void;
   importFile: (file: File) => Promise<void>;
   merge: (tariffs: Tariff[]) => void;
+  next: () => void;
+  update: SessionProps['update'];
   postcode: string;
   region: string;
   changeLocation: (postcode: string, region: string) => void;
@@ -178,6 +184,8 @@ function TariffToolbar({
       </label>
       <TariffTrackerImport
         merge={merge}
+        next={next}
+        update={update}
         postcode={postcode}
         region={region}
         changeLocation={changeLocation}
@@ -192,10 +200,12 @@ function TariffToolbar({
 
 function TariffTrackerImport({
   merge,
+  next,
+  update,
   postcode,
   region,
   changeLocation,
-}: {
+}: Pick<SessionProps, 'update' | 'next'> & {
   merge: (tariffs: Tariff[]) => void;
   postcode: string;
   region: string;
@@ -211,14 +221,14 @@ function TariffTrackerImport({
   const [sourceNote, setSourceNote] = useState('');
   const [caveats, setCaveats] = useState<string[]>([]);
   const startRequest = useAbortableRequest();
-  const load = async () => {
+  const load = async (guided = false) => {
     const requestController = startRequest();
     setLoading(true);
     setError('');
     setSourceNote('');
     setCaveats([]);
     try {
-      const { resolvedRegion, tariffs, asOf, caveats } = await requestTariffs(
+      const { resolvedRegion, tariffs, offers, asOf, caveats } = await requestTariffs(
         postcodeValue,
         regionValue,
         requestController.signal,
@@ -226,6 +236,14 @@ function TariffTrackerImport({
       if (!requestController.signal.aborted) {
         changeRegion(resolvedRegion);
         merge(tariffs);
+        update({
+          tariffOffers: offers,
+          tariffSource: { region: resolvedRegion, asOf, caveats },
+          guidedCompare: guided,
+        });
+        if (guided) {
+          next();
+        }
       }
       if (!requestController.signal.aborted) {
         setSourceNote(
@@ -246,6 +264,42 @@ function TariffTrackerImport({
     }
   };
   return (
+    <TariffTrackerControls
+      postcode={postcodeValue}
+      region={regionValue}
+      changePostcode={changePostcode}
+      changeRegion={changeRegion}
+      load={load}
+      loading={loading}
+      error={error}
+      sourceNote={sourceNote}
+      caveats={caveats}
+    />
+  );
+}
+
+function TariffTrackerControls({
+  postcode,
+  region,
+  changePostcode,
+  changeRegion,
+  load,
+  loading,
+  error,
+  sourceNote,
+  caveats,
+}: {
+  postcode: string;
+  region: string;
+  changePostcode: (value: string) => void;
+  changeRegion: (value: string) => void;
+  load: (guided?: boolean) => Promise<void>;
+  loading: boolean;
+  error: string;
+  sourceNote: string;
+  caveats: string[];
+}) {
+  return (
     <div className="tariff-tracker-import">
       <div>
         <strong>Find tariffs from Tariff Tracker</strong>
@@ -253,14 +307,7 @@ function TariffTrackerImport({
           Use a postcode to resolve your electricity region, or enter the region directly.
         </p>
       </div>
-      <TariffTrackerFields
-        postcode={postcodeValue}
-        region={regionValue}
-        changePostcode={changePostcode}
-        changeRegion={changeRegion}
-        load={load}
-        loading={loading}
-      />
+      <TariffTrackerFields {...{ postcode, region, changePostcode, changeRegion, load, loading }} />
       <ErrorNotice message={error} />
       <p role="status">{sourceNote}</p>
       <TariffCaveats caveats={caveats} />
@@ -281,7 +328,7 @@ function TariffTrackerFields({
   region: string;
   changePostcode: (value: string) => void;
   changeRegion: (value: string) => void;
-  load: () => Promise<void>;
+  load: (guided?: boolean) => Promise<void>;
   loading: boolean;
 }) {
   return (
@@ -304,6 +351,9 @@ function TariffTrackerFields({
       </label>
       <button type="button" onClick={() => void load()} disabled={loading}>
         {loading ? 'Loading…' : 'Load tariffs'}
+      </button>
+      <button type="button" className="primary" onClick={() => void load(true)} disabled={loading}>
+        {loading ? 'Loading…' : 'Find cheapest for this usage'}
       </button>
     </div>
   );

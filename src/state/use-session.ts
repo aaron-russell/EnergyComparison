@@ -18,6 +18,9 @@ export function useSession() {
     estimated: null,
     tariffs: [],
     baselineId: '',
+    tariffOffers: [],
+    tariffSource: null,
+    guidedCompare: false,
     isDemo: false,
     ...snapshot?.data,
   }));
@@ -52,6 +55,9 @@ export function useSession() {
         estimated: null,
         tariffs: [],
         baselineId: '',
+        tariffOffers: [],
+        tariffSource: null,
+        guidedCompare: false,
         isDemo: false,
       });
       loadSavedTariffs(update);
@@ -71,6 +77,9 @@ export function useSession() {
       estimated: null,
       tariffs: structuredClone(exampleTariffs),
       baselineId: exampleTariffs[0].id,
+      tariffOffers: [],
+      tariffSource: null,
+      guidedCompare: false,
       isDemo: true,
     });
     hydrateDemo(update, period);
