@@ -1,12 +1,11 @@
 name: Deploy to Cloudflare Pages
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [Quality checks]
+    types: [completed]
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow_dispatch:
 
 concurrency:
   group: cloudflare-pages-${{ github.event.pull_request.number || 'production' }}
@@ -19,7 +18,10 @@ permissions:
 jobs:
   production:
     name: Deploy production
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
     permissions:
       contents: read
       deployments: write
@@ -27,6 +29,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
