@@ -47,8 +47,8 @@ export function PrivacyNote() {
     <div className="privacy-note">
       <ShieldCheck size={19} />
       <p>
-        Your energy data stays in this browser session. Only tariffs you choose to save and your
-        theme preference are stored.
+        Your progress stays in this browser tab so a refresh can recover it. Credentials and live
+        provider connections are never stored; closing the tab clears the progress.
       </p>
     </div>
   );

@@ -39,21 +39,21 @@ numbers, meter identifiers or household readings in a public issue.
 
 ## Energy Replay application
 
-Energy Replay is designed to keep household data in your browser. Depending on the workflow, the
-browser may temporarily hold provider credentials, account connections, meter or device
-references, imported readings, charging records, calculated results and tariff definitions. This
-data is used to connect, normalise and replay the data you choose to provide. It is not sent to a
-Russell Tech server for storage, and the application has no server-side account, database or
-credential proxy.
+Imported readings and charging records remain in the active browser tab session so a refresh can
+restore progress. Credentials and account connections remain memory-only and are never stored.
+Leaving the tab or using **Clear session** removes the progress. Only explicitly saved tariff definitions
+and the dark/light theme use local storage. Tariff exports
+contain tariff definitions only, never consumption, account, meter, or device data.
 
 Provider requests are made directly from your browser to the fixed HTTPS origins documented by the
 application. The chosen provider receives the request and any credentials or records required for
 that provider connection under its own privacy notice. Russell Tech does not control how a provider
 uses data after the request leaves your browser.
 
-The application keeps connection data, imported data, results and workers in memory. Refreshing,
-leaving the page, or using **Clear session** disposes of that session data. Explicitly saved tariff
-definitions and the dark/light theme are the only application values written to local storage.
+The application keeps provider credentials, connection objects and active workers in memory. The
+non-credential workflow snapshot is written to `sessionStorage` for the current browser tab so a
+refresh can restore progress; closing the tab or using **Clear session** removes it. Explicitly saved
+tariff definitions and the dark/light theme are the only values written to `localStorage`.
 Tariff exports contain tariff definitions only, never consumption, account, meter or device data.
 
 The service is not intended for children, and you should only import data that you are authorised
@@ -65,12 +65,12 @@ The application and documentation site do not set cookies for login, advertising
 personalisation. They also do not use a service worker, remote fonts, session replay, advertising
 pixels or other third-party tracking tools.
 
-| Technology                    | What it does                                                                           | Where it is stored                                           | Retention                                                  |
-| ----------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
-| `energy-replay:theme`         | Remembers the selected dark or light theme.                                            | Browser local storage                                        | Until you remove it or clear site data                     |
-| `energy-replay:saved-tariffs` | Stores tariff definitions that you explicitly save.                                    | Browser local storage                                        | Until you delete the saved tariff or clear site data       |
-| Session state                 | Holds connections, imports, readings, charging data and results while the app is open. | Browser memory                                               | Until refresh, page exit or **Clear session**              |
-| Cloudflare Web Analytics      | Measures aggregate page-performance signals for the application.                       | No cookie or local-storage identifier is used by the beacon. | Controlled by Cloudflare's service and dashboard retention |
+| Technology                    | What it does                                                                                | Where it is stored                                           | Retention                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| `energy-replay:theme`         | Remembers the selected dark or light theme.                                                 | Browser local storage                                        | Until you remove it or clear site data                     |
+| `energy-replay:saved-tariffs` | Stores tariff definitions that you explicitly save.                                         | Browser local storage                                        | Until you delete the saved tariff or clear site data       |
+| Session progress              | Holds non-credential imports, readings, charging data, results and in-progress form values. | Browser `sessionStorage` for the current tab                 | Until tab close, **Clear session**, or storage failure     |
+| Cloudflare Web Analytics      | Measures aggregate page-performance signals for the application.                            | No cookie or local-storage identifier is used by the beacon. | Controlled by Cloudflare's service and dashboard retention |
 
 Cloudflare Web Analytics is loaded only by the application shell, not by the documentation pages.
 It is used for privacy-focused performance measurement and does not receive the household data
