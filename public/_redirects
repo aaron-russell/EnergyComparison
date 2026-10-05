@@ -1,5 +1,7 @@
 /docs/adapters.html /docs/guide/adding-an-adapter.html 301
 /docs/cloudflare-pages.html /docs/operations/cloudflare-pages.html 301
 /docs/cloudflare-workers.html /docs/operations/cloudflare-workers.html 301
-/docs/privacy.html /docs/operations/privacy-and-security.html 301
 /docs/release-checks.html /docs/operations/release-checks.html 301
+/privacy /docs/privacy.html 301
+/privacy/ /docs/privacy.html 301
+/privacy.html /docs/privacy.html 301

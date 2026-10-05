@@ -76,14 +76,17 @@ export default defineConfig({
       '@graph': Record<string, unknown>[];
     };
     if (relativePath !== '/docs/') {
-      jsonLd['@graph'].push(
-        {
+      const policyPage = relativePath === '/docs/privacy.html';
+      if (!policyPage) {
+        jsonLd['@graph'].push({
           '@type': 'Person',
           '@id': authorId,
           name: 'Aaron Russell',
           url: authorId,
           sameAs: [repository, authorWebsite],
-        },
+        });
+      }
+      jsonLd['@graph'].push(
         {
           '@type': 'Organization',
           '@id': organizationId,
@@ -97,7 +100,7 @@ export default defineConfig({
           name: title,
           description,
           isPartOf: { '@id': `${site}/docs/#website` },
-          author: { '@id': authorId },
+          author: { '@id': policyPage ? organizationId : authorId },
           publisher: { '@id': organizationId },
           ...(frontmatter.reviewed
             ? { dateModified: frontmatter.reviewed }
@@ -136,7 +139,7 @@ export default defineConfig({
       { text: 'Extend', link: '/guide/adding-an-adapter' },
       { text: 'About', link: '/about' },
       { text: 'Projects', link: '/projects/energy-replay' },
-      { text: 'Policies', link: '/editorial-policy' },
+      { text: 'Policies', link: '/privacy' },
       { text: 'Operations', link: '/operations/cloudflare-pages' },
       { text: 'Reference', link: '/reference/contracts' },
       { text: `v${version}`, link: '/versions' },

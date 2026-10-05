@@ -36,7 +36,6 @@ const legacyDocumentationPaths = new Set([
   '/docs/cloudflare-pages.html',
   '/docs/cloudflare-workers.html',
   '/docs/release-checks.html',
-  '/docs/privacy.html',
 ]);
 const paths = files
   .map(publicPath)
