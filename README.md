@@ -94,8 +94,9 @@ Reference pages cover the [adapter contracts](docs/reference/contracts.md), [nor
 Only explicitly saved tariffs and the theme preference persist. Exports contain tariffs only.
 Refresh keeps non-credential progress in the current tab so the journey can resume. Page exit and
 Clear session dispose of imports, credentials, connections and workers.
-The application uses only Cloudflare Web Analytics for privacy-focused performance and usage
-measurement; it has no other analytics, service worker, sensitive logging or remote fonts.
+The application uses Cloudflare Web Analytics for basic aggregate performance measurement. Zaraz
+and other analytics are disabled; users can turn Cloudflare analytics off from the privacy page.
+The app has no service worker, sensitive logging or remote fonts.
 
 ## Release status
 

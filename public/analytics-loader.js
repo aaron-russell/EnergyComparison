@@ -1,4 +1,13 @@
 (() => {
+  const preferenceKey = 'energy-replay-analytics-opt-out';
+  try {
+    if (document.cookie.split(';').some((cookie) => cookie.trim() === `${preferenceKey}=true`)) {
+      return;
+    }
+  } catch {
+    // Analytics remains available when browser cookies are unavailable.
+  }
+
   const loadAnalytics = () => {
     if (document.querySelector('script[data-cf-beacon]')) return;
 

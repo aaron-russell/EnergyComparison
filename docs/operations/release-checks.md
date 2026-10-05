@@ -52,6 +52,7 @@ clear the session and dispose of local files. Do not commit reports or screensho
 
 Verify `/`, `/docs/`, nested docs routes, docs assets, application SPA fallback, CSP, MIME types,
 worker loading, JSON import/export, HTTPS, and self-hosted assets. Confirm the Cloudflare Web
-Analytics beacon is present and no Zaraz, additional analytics, service workers, sensitive browser
-storage, or application logging is present. Keep the last successful deployment available for
+Analytics beacon is present by default, the privacy-page opt-out cookie suppresses it across visits,
+and no Zaraz, additional analytics, service workers, sensitive browser storage, or application
+logging is present. Keep the last successful deployment available for
 rollback and record the tested provider/report versions without account identifiers.
