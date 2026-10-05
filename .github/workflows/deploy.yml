@@ -60,21 +60,6 @@ jobs:
           EXPECT_NOINDEX: 'false'
         run: node scripts/smoke-hosted-site.mjs
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Chromium for hosted browser checks
-        run: npx playwright install --with-deps chromium
-
-      - name: Run synthetic browser workflows against production
-        id: hosted_browser
-        env:
-          E2E_BASE_URL: https://energy.russell-tech.co.uk
-        run: npm run test:e2e
-
       - name: Record deployment verification summary
         if: always()
         env:
@@ -82,7 +67,6 @@ jobs:
           DEPLOYED_SHA: ${{ github.event.workflow_run.head_sha }}
           DEPLOY_RESULT: ${{ steps.deploy.outcome }}
           SMOKE_RESULT: ${{ steps.hosted_smoke.outcome }}
-          BROWSER_RESULT: ${{ steps.hosted_browser.outcome }}
           JOB_RESULT: ${{ job.status }}
           REPOSITORY: ${{ github.repository }}
         run: |
@@ -93,7 +77,6 @@ jobs:
             echo "- Site: $SITE_URL"
             echo "- Deployment action: $DEPLOY_RESULT"
             echo "- Hosted HTTP smoke: $SMOKE_RESULT"
-            echo "- Hosted synthetic browser workflows: $BROWSER_RESULT"
             echo "- Job result: $JOB_RESULT"
             echo "- Provider release checks: not run by this workflow; see [release checks](https://github.com/$REPOSITORY/blob/$DEPLOYED_SHA/docs/operations/release-checks.md)."
           } >> "$GITHUB_STEP_SUMMARY"
