@@ -1,78 +1,58 @@
 name: Quality checks
 on: [push, pull_request]
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
+  quality:
+    name: Formatting and lint
+    uses: ./.github/workflows/quality-checks.yml
+
+  coverage:
+    name: Unit tests and coverage
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/coverage.yml
+
+  build:
+    name: Production build and site checks
+    uses: ./.github/workflows/build.yml
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/dependency-review.yml
+
+  browser-e2e:
+    name: Browser workflows
+    needs: build
+    uses: ./.github/workflows/browser-e2e.yml
+
   check:
+    name: check
+    if: always()
+    needs: [quality, coverage, build, dependency-review, browser-e2e]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run check
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-report
-          path: coverage/
-          if-no-files-found: warn
-      - name: Comment coverage on pull request
-        if: ${{ always() && github.event_name == 'pull_request' }}
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('node:fs');
-            const marker = '<!-- coverage-report -->';
-            const summaryPath = 'coverage/coverage-summary.json';
-
-            if (!fs.existsSync(summaryPath)) {
-              core.warning(`Coverage summary not found at ${summaryPath}`);
-              return;
-            }
-
-            const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8')).total;
-            const pct = (metric) => `${metric.pct.toFixed(2)}%`;
-            const body = [
-              marker,
-              '## Coverage report',
-              '',
-              '| Metric | Coverage |',
-              '| --- | ---: |',
-              `| Statements | ${pct(summary.statements)} |`,
-              `| Branches | ${pct(summary.branches)} |`,
-              `| Functions | ${pct(summary.functions)} |`,
-              `| Lines | ${pct(summary.lines)} |`,
-              '',
-              `[Download the full coverage artifact](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
-            ].join('\n');
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find((comment) => comment.body?.includes(marker));
-
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - name: Require every pipeline job to pass
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          COVERAGE_RESULT: ${{ needs.coverage.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}
+          E2E_RESULT: ${{ needs.browser-e2e.result }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$QUALITY_RESULT" != success || "$COVERAGE_RESULT" != success || "$BUILD_RESULT" != success || "$E2E_RESULT" != success ]]; then
+            exit 1
+          fi
+          if [[ "$EVENT_NAME" == pull_request && "$DEPENDENCY_REVIEW_RESULT" != success ]]; then
+            exit 1
+          fi
