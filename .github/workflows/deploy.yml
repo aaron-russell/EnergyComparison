@@ -27,8 +27,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -51,6 +49,12 @@ jobs:
           command: pages deploy dist --project-name=energy-replay
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Smoke test production site
+        env:
+          SITE_URL: https://energy.russell-tech.co.uk
+          EXPECT_NOINDEX: 'false'
+        run: node scripts/smoke-hosted-site.mjs
+
   preview-build:
     name: Build PR preview
     if: >-
@@ -64,8 +68,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
