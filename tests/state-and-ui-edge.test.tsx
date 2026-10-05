@@ -28,6 +28,9 @@ const baseData = (patch: Partial<SessionData> = {}): SessionData => ({
   estimated: null,
   tariffs: structuredClone(exampleTariffs),
   baselineId: exampleTariffs[0].id,
+  tariffOffers: [],
+  tariffSource: null,
+  guidedCompare: false,
   isDemo: false,
   ...patch,
 });
@@ -164,6 +167,29 @@ describe('tariff and results UI', () => {
     );
     expect(screen.getByText('0% vs baseline')).toBeVisible();
     expect(screen.queryByRole('img', { name: 'Monthly difference from baseline' })).toBeNull();
+    view.rerender(
+      <ReplayResults
+        results={[result, alternative]}
+        tariffs={exampleTariffs}
+        baselineId=""
+        offers={[
+          {
+            tariffId: exampleTariffs[0].id,
+            supplier: 'Test Energy',
+            tariff: 'Fixed',
+            kind: 'fixed',
+            payment: 'direct debit',
+            termMonths: '12',
+            exitFeeGbp: '50',
+            annualEstimateGbp: '1000',
+          },
+        ]}
+        source={{ region: 'Yorkshire', asOf: '2026-10-01T00:00:00Z', caveats: ['Check terms'] }}
+      />,
+    );
+    expect(screen.getByText('Not supplied')).toBeVisible();
+    expect(screen.getByText(/fixed · direct debit · 12-month term/)).toBeVisible();
+    expect(screen.getByText(/lowest result is a historical replay/)).toBeVisible();
   });
 });
 

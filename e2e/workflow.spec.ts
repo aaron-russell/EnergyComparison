@@ -345,6 +345,68 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
 });
 
+test('finds the lowest compatible open tariff without a current baseline', async ({ page }) => {
+  await page.route('https://tarifftracker.io/api/v1/lookup**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ data: { electricity_region: 'Yorkshire' } }),
+    });
+  });
+  await page.route('https://tarifftracker.io/api/v1/energy/tariffs**', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        as_of: '2026-10-01T00:00:00Z',
+        caveats: ['Check supplier terms before switching'],
+        rows: [
+          {
+            supplier: 'Synthetic Cheap Energy',
+            tariff: 'Fixed',
+            product_code: 'CHEAP',
+            region: 'Yorkshire',
+            fuel: 'dual',
+            kind: 'fixed',
+            payment: 'direct debit',
+            unit_p_kwh: '20',
+            standing_p_day: '45',
+            gas_unit_p_kwh: '5',
+            gas_standing_p_day: '25',
+            annual_est_gbp: '800',
+            term_months: '12',
+            exit_fee_gbp: '50',
+          },
+          {
+            supplier: 'Synthetic Other Energy',
+            tariff: 'Variable',
+            product_code: 'OTHER',
+            region: 'Yorkshire',
+            fuel: 'dual',
+            kind: 'variable',
+            payment: 'direct debit',
+            unit_p_kwh: '30',
+            standing_p_day: '55',
+            gas_unit_p_kwh: '8',
+            gas_standing_p_day: '30',
+            annual_est_gbp: '1100',
+          },
+        ],
+      }),
+    });
+  });
+  await syntheticImport(page);
+  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  await page.getByRole('button', { name: 'Continue to tariffs' }).click();
+  await page.getByLabel('Postcode').fill('L1 1AA');
+  await page.getByRole('button', { name: 'Find cheapest for this usage' }).click();
+  await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByText('Lowest replay', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Not supplied', { exact: true })).toBeVisible();
+  await expect(page.getByText('Open tariff data · Yorkshire')).toBeVisible();
+  await expect(page.getByText(/12-month term/)).toBeVisible();
+});
+
 test('labels complete and incomplete 12-month periods correctly', async ({ page }) => {
   test.setTimeout(120000);
   await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01', false, true);

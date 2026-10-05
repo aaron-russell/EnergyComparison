@@ -54,10 +54,10 @@ export function TariffsPage({ data, update, next }: SessionProps) {
         examples={() => merge(structuredClone(exampleTariffs))}
         exportAll={() => exportTariffs(data.tariffs)}
         importFile={importFile}
-        merge={merge}
       />
       <ErrorNotice message={error} />
       <p role="status">{message}</p>
+      <TariffTrackerImport merge={merge} next={next} update={update} />
       {draft && (
         <TariffEditor key={draft.id} initial={draft} apply={apply} cancel={() => setDraft(null)} />
       )}
@@ -92,13 +92,11 @@ function TariffToolbar({
   examples,
   exportAll,
   importFile,
-  merge,
 }: {
   add: () => void;
   examples: () => void;
   exportAll: () => void;
   importFile: (file: File) => Promise<void>;
-  merge: (tariffs: Tariff[]) => void;
 }) {
   return (
     <div className="panel">
@@ -124,7 +122,6 @@ function TariffToolbar({
           }}
         />
       </label>
-      <TariffTrackerImport merge={merge} />
       <p className="muted">
         Saving is explicit. Refreshing clears unsaved definitions. Export includes tariff
         definitions only.
@@ -133,7 +130,11 @@ function TariffToolbar({
   );
 }
 
-function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) {
+function TariffTrackerImport({
+  merge,
+  next,
+  update,
+}: Pick<SessionProps, 'update' | 'next'> & { merge: (tariffs: Tariff[]) => void }) {
   const [postcode, setPostcode] = useState('');
   const [region, setRegion] = useState('');
   const [loading, setLoading] = useState(false);
@@ -141,14 +142,14 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
   const [sourceNote, setSourceNote] = useState('');
   const [caveats, setCaveats] = useState<string[]>([]);
   const startRequest = useAbortableRequest();
-  const load = async () => {
+  const load = async (guided = false) => {
     const requestController = startRequest();
     setLoading(true);
     setError('');
     setSourceNote('');
     setCaveats([]);
     try {
-      const { resolvedRegion, tariffs, asOf, caveats } = await requestTariffs(
+      const { resolvedRegion, tariffs, offers, asOf, caveats } = await requestTariffs(
         postcode,
         region,
         requestController.signal,
@@ -156,6 +157,14 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
       if (!requestController.signal.aborted) {
         setRegion(resolvedRegion);
         merge(tariffs);
+        update({
+          tariffOffers: offers,
+          tariffSource: { region: resolvedRegion, asOf, caveats },
+          guidedCompare: guided,
+        });
+        if (guided) {
+          next();
+        }
       }
       if (!requestController.signal.aborted) {
         setSourceNote(
@@ -183,27 +192,14 @@ function TariffTrackerImport({ merge }: { merge: (tariffs: Tariff[]) => void }) 
           Use a postcode to resolve your electricity region, or enter the region directly.
         </p>
       </div>
-      <div className="form-row">
-        <label className="field">
-          Postcode
-          <input
-            value={postcode}
-            onChange={(event) => setPostcode(event.target.value)}
-            placeholder="L1 1AA"
-          />
-        </label>
-        <label className="field">
-          Electricity region
-          <input
-            value={region}
-            onChange={(event) => setRegion(event.target.value)}
-            placeholder="Yorkshire"
-          />
-        </label>
-        <button type="button" onClick={() => void load()} disabled={loading}>
-          {loading ? 'Loading…' : 'Load tariffs'}
-        </button>
-      </div>
+      <TariffSearchFields
+        postcode={postcode}
+        region={region}
+        loading={loading}
+        setPostcode={setPostcode}
+        setRegion={setRegion}
+        load={load}
+      />
       <ErrorNotice message={error} />
       <p role="status">{sourceNote}</p>
       <TariffCaveats caveats={caveats} />
@@ -222,6 +218,49 @@ function TariffCaveats({ caveats }: { caveats: string[] }) {
         <li key={`${index}-${caveat}`}>{caveat}</li>
       ))}
     </ul>
+  );
+}
+
+function TariffSearchFields({
+  postcode,
+  region,
+  loading,
+  setPostcode,
+  setRegion,
+  load,
+}: {
+  postcode: string;
+  region: string;
+  loading: boolean;
+  setPostcode: (value: string) => void;
+  setRegion: (value: string) => void;
+  load: (guided?: boolean) => Promise<void>;
+}) {
+  return (
+    <div className="form-row">
+      <label className="field">
+        Postcode
+        <input
+          value={postcode}
+          onChange={(event) => setPostcode(event.target.value)}
+          placeholder="L1 1AA"
+        />
+      </label>
+      <label className="field">
+        Electricity region
+        <input
+          value={region}
+          onChange={(event) => setRegion(event.target.value)}
+          placeholder="Yorkshire"
+        />
+      </label>
+      <button type="button" onClick={() => void load()} disabled={loading}>
+        {loading ? 'Loading…' : 'Load tariffs'}
+      </button>
+      <button type="button" className="primary" onClick={() => void load(true)} disabled={loading}>
+        {loading ? 'Loading…' : 'Find cheapest for this usage'}
+      </button>
+    </div>
   );
 }
 

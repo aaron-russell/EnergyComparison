@@ -1,33 +1,45 @@
 import { prepareReplay } from '../state/replay-job';
 import { Selection } from '../components/Selection';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReplayResult } from '../core/types';
 import type { SessionProps } from '../state/session';
 import { useJob } from '../state/use-job';
 import { ErrorNotice, OperationStatus, PageHeading } from '../components/Shared';
 import { ReplayResults } from '../components/Results';
 
-export function ComparePage({ data }: SessionProps) {
-  const [scope, setScope] = useState('dual');
+export function ComparePage({ data, update }: SessionProps) {
+  const defaultScope = data.supplies.length === 2 ? 'dual' : (data.supplies[0]?.fuel ?? 'dual');
+  const [scope, setScope] = useState(data.guidedCompare ? defaultScope : 'dual');
   const [view, setView] = useState('observed');
   const [renewable, setRenewable] = useState('all');
   const [results, setResults] = useState<ReplayResult[]>([]);
   const [error, setError] = useState('');
   const job = useJob();
-  const compare = () => {
-    try {
-      const request = prepareReplay(data, scope, view, renewable);
-      setError('');
-      setResults([]);
-      job.run(request, (output) => {
-        if (output.kind === 'replay') {
-          setResults(output.results);
-        }
-      });
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'Check the comparison options.');
+  const guidedStarted = useRef(false);
+  const compare = useCallback(
+    (guided = false) => {
+      try {
+        const request = prepareReplay(data, scope, view, renewable, !guided);
+        setError('');
+        setResults([]);
+        guidedStarted.current = guided;
+        job.run(request, (output) => {
+          if (output.kind === 'replay') {
+            setResults(output.results);
+          }
+        });
+      } catch (failure) {
+        setError(failure instanceof Error ? failure.message : 'Check the comparison options.');
+      }
+    },
+    [data, job, renewable, scope, view],
+  );
+  useEffect(() => {
+    if (data.guidedCompare && !guidedStarted.current) {
+      update({ guidedCompare: false });
+      compare(true);
     }
-  };
+  }, [compare, data.guidedCompare, update]);
   const change = (setter: (value: string) => void) => (value: string) => {
     job.cancel();
     setter(value);
@@ -39,45 +51,122 @@ export function ComparePage({ data }: SessionProps) {
         Historical replay, not guaranteed future savings. Prices are VAT-inclusive and do not
         include export income or battery simulation.
       </PageHeading>
-      <section className="panel">
-        <CompareControls
-          scope={scope}
-          view={view}
-          renewable={renewable}
-          hasEstimate={!!data.estimated}
-          scopeChange={change(setScope)}
-          viewChange={change(setView)}
-          renewableChange={change(setRenewable)}
-        />
-        <button
-          className="primary"
-          disabled={job.busy || data.tariffs.length < 2}
-          onClick={compare}
-        >
-          Replay these tariffs
-        </button>
-        <OperationStatus
-          busy={job.busy}
-          message={job.busy ? 'Replaying in a private calculation worker…' : ''}
-          cancel={job.cancel}
-        />
-        <ErrorNotice message={error || job.error} />
-      </section>
+      <ComparePanel
+        scope={scope}
+        view={view}
+        renewable={renewable}
+        hasEstimate={!!data.estimated}
+        scopeChange={change(setScope)}
+        viewChange={change(setView)}
+        renewableChange={change(setRenewable)}
+        compare={compare}
+        busy={job.busy}
+        error={error || job.error}
+        cancel={job.cancel}
+        tariffCount={data.tariffs.length}
+      />
       {data.isDemo && <DemoNotice />}
-      {!!results.length && (
-        <>
-          <ReplayNotice
-            result={results[0]}
-            estimatedShare={view === 'estimated' ? data.estimated?.estimatedShare : undefined}
-          />
-          <ReplayResults
-            results={results}
-            tariffs={data.tariffs}
-            baselineId={data.baselineId}
-            period={data.period}
-          />
-        </>
-      )}
+      <ComparisonOutput
+        results={results}
+        view={view}
+        estimatedShare={data.estimated?.estimatedShare}
+        tariffs={data.tariffs}
+        baselineId={data.baselineId}
+        period={data.period}
+        offers={data.tariffOffers}
+        source={data.tariffSource}
+      />
+    </>
+  );
+}
+
+function ComparePanel({
+  scope,
+  view,
+  renewable,
+  hasEstimate,
+  scopeChange,
+  viewChange,
+  renewableChange,
+  compare,
+  busy,
+  error,
+  cancel,
+  tariffCount,
+}: {
+  scope: string;
+  view: string;
+  renewable: string;
+  hasEstimate: boolean;
+  scopeChange: (value: string) => void;
+  viewChange: (value: string) => void;
+  renewableChange: (value: string) => void;
+  compare: () => void;
+  busy: boolean;
+  error: string;
+  cancel: () => void;
+  tariffCount: number;
+}) {
+  return (
+    <section className="panel">
+      <CompareControls
+        scope={scope}
+        view={view}
+        renewable={renewable}
+        hasEstimate={hasEstimate}
+        scopeChange={scopeChange}
+        viewChange={viewChange}
+        renewableChange={renewableChange}
+      />
+      <button className="primary" disabled={busy || tariffCount < 2} onClick={compare}>
+        Replay these tariffs
+      </button>
+      <OperationStatus
+        busy={busy}
+        message={busy ? 'Replaying in a private calculation worker…' : ''}
+        cancel={cancel}
+      />
+      <ErrorNotice message={error} />
+    </section>
+  );
+}
+
+function ComparisonOutput({
+  results,
+  view,
+  estimatedShare,
+  tariffs,
+  baselineId,
+  period,
+  offers,
+  source,
+}: {
+  results: ReplayResult[];
+  view: string;
+  estimatedShare?: string;
+  tariffs: SessionProps['data']['tariffs'];
+  baselineId: string;
+  period: SessionProps['data']['period'];
+  offers: SessionProps['data']['tariffOffers'];
+  source: SessionProps['data']['tariffSource'];
+}) {
+  if (!results.length) {
+    return null;
+  }
+  return (
+    <>
+      <ReplayNotice
+        result={results[0]}
+        estimatedShare={view === 'estimated' ? estimatedShare : undefined}
+      />
+      <ReplayResults
+        results={results}
+        tariffs={tariffs}
+        baselineId={baselineId}
+        period={period}
+        offers={offers}
+        source={source}
+      />
     </>
   );
 }

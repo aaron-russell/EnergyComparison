@@ -66,6 +66,13 @@ describe('Tariff Tracker adapter', () => {
     const result = await fetchTariffs('Yorkshire');
     expect(result.asOf).toBe('2026-09-30T00:00:00Z');
     expect(result.caveats).toEqual(['Open supplier data']);
+    expect(result.offers[0]).toMatchObject({
+      tariffId: result.tariffs[0].id,
+      supplier: 'Test Energy',
+      kind: 'fixed',
+      payment: 'direct debit',
+      annualEstimateGbp: '1200',
+    });
     expect(result.tariffs).toHaveLength(3);
     expect(result.tariffs[0]).toMatchObject({
       electricity: { standing: '20', bands: [{ rate: '25.123456789' }] },

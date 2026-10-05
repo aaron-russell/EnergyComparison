@@ -7,17 +7,7 @@ import type { Reading } from '../core/types';
 
 export function useSession() {
   const [connection, setConnection] = useState<EnergyConnection | null>(null);
-  const [data, setData] = useState<SessionData>(() => ({
-    period: previousYear(),
-    supplies: [],
-    readings: [],
-    conflicts: 0,
-    charging: [],
-    estimated: null,
-    tariffs: [],
-    baselineId: '',
-    isDemo: false,
-  }));
+  const [data, setData] = useState<SessionData>(emptySession);
   const update = (patch: Partial<SessionData> | ((current: SessionData) => Partial<SessionData>)) =>
     setData((current) => ({
       ...current,
@@ -50,6 +40,9 @@ export function useSession() {
         estimated: null,
         tariffs: [],
         baselineId: '',
+        tariffOffers: [],
+        tariffSource: null,
+        guidedCompare: false,
         isDemo: false,
       });
       return;
@@ -68,6 +61,9 @@ export function useSession() {
       estimated: null,
       tariffs: structuredClone(exampleTariffs),
       baselineId: exampleTariffs[0].id,
+      tariffOffers: [],
+      tariffSource: null,
+      guidedCompare: false,
       isDemo: true,
     });
     void import('../fixtures/synthetic').then(({ syntheticCharging, syntheticReadings }) => {
@@ -90,5 +86,22 @@ function demoPlaceholder(start: string): Reading {
     kWh: '0',
     source: 'synthetic-example',
     status: 'measured',
+  };
+}
+
+function emptySession(): SessionData {
+  return {
+    period: previousYear(),
+    supplies: [],
+    readings: [],
+    conflicts: 0,
+    charging: [],
+    estimated: null,
+    tariffs: [],
+    baselineId: '',
+    tariffOffers: [],
+    tariffSource: null,
+    guidedCompare: false,
+    isDemo: false,
   };
 }
