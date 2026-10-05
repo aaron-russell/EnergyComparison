@@ -5,6 +5,10 @@ description: Review Energy Replay's browser-only data handling, provider transpo
 
 # Privacy and security
 
+Read the public [privacy and cookie policy](/privacy) for the site's controller, retention,
+rights and cookie information. This page records the implementation and security boundaries for
+maintainers.
+
 Imported readings, credentials, account connections, and charging records remain in the active browser
 session. Only explicitly saved tariff definitions and theme preference persist locally. Tariff exports
 contain definitions only. The application uses only Cloudflare Web Analytics for privacy-focused
