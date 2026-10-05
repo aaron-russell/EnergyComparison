@@ -212,6 +212,36 @@ async function syntheticImport(page: Page) {
   await page.getByRole('button', { name: 'Review coverage' }).click();
 }
 
+async function finishComparison(
+  page: Page,
+  options: { chargingStepOpen?: boolean; electricityOnly?: boolean } = {},
+) {
+  if (!options.chargingStepOpen) {
+    await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  }
+  await page.getByRole('button', { name: 'Continue to tariffs' }).click();
+  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
+  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
+  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
+  if (options.electricityOnly) {
+    await page.getByLabel('Fuel comparison').selectOption('electricity');
+  }
+  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(
+    page.getByRole('table', {
+      name: 'Identical period, supplies and energy for all tariffs',
+    }),
+  ).toBeVisible();
+  const tariffRows = page
+    .getByRole('table', { name: 'Identical period, supplies and energy for all tariffs' })
+    .locator('tbody tr');
+  expect(await tariffRows.count()).toBeGreaterThan(1);
+  await expect(tariffRows.filter({ hasText: 'Baseline' })).toHaveCount(1);
+}
+
 async function compareSyntheticPeriod(
   page: Page,
   start: string,
@@ -347,6 +377,193 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   expect(Object.keys(storage.session)).toEqual(['energy-replay:session']);
   await page.getByRole('button', { name: 'Clear session' }).click();
   await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
+});
+
+test('Octopus discovery, authenticated interval import and tariff comparison', async ({ page }) => {
+  const requests: Array<{ url: URL; headers: Record<string, string>; method: string }> = [];
+  const intervals = Array.from({ length: 48 }, (_, index) => {
+    const start = new Date(Date.UTC(2024, 2, 1, 0, index * 30));
+    const end = new Date(start.getTime() + 30 * 60 * 1000);
+    return {
+      interval_start: start.toISOString(),
+      interval_end: end.toISOString(),
+      consumption: '0.25',
+    };
+  });
+  await page.route('https://api.octopus.energy/**', async (route) => {
+    const request = route.request();
+    requests.push({
+      url: new URL(request.url()),
+      headers: await request.allHeaders(),
+      method: request.method(),
+    });
+    const response = request.url().includes('/v1/accounts/')
+      ? {
+          properties: [
+            {
+              electricity_meter_points: [
+                {
+                  mpan: 'SYNTHETIC-MPAN',
+                  meters: [{ serial_number: 'SYNTHETIC-METER' }],
+                  is_export: false,
+                },
+              ],
+              gas_meter_points: [],
+            },
+          ],
+        }
+      : { results: intervals, next: null };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });
+  });
+
+  await page.goto('/');
+  await page.getByLabel('API key', { exact: true }).fill('synthetic-key');
+  await page.getByLabel('Account number', { exact: true }).fill('A-SYNTHETIC');
+  await page.getByLabel('Gas API unit (confirm before import)').selectOption('none');
+  await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
+  await expect(page.getByText('Connected · 1 import supplies discovered')).toBeVisible();
+  await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
+  await page.getByRole('button', { name: 'Choose import period' }).click();
+  await page.getByLabel('Start date (included)').fill('2024-03-01');
+  await page.getByLabel('End date (excluded)').fill('2024-03-02');
+  await page.getByRole('button', { name: 'Import history / retry' }).click();
+  await expect(page.getByText('48 half-hour readings retained.')).toBeVisible();
+  expect(requests).toHaveLength(2);
+  expect(requests.map(({ method }) => method)).toEqual(['GET', 'GET']);
+  expect(requests[0].url.pathname).toBe('/v1/accounts/A-SYNTHETIC/');
+  expect(requests[0].headers.authorization).toBe(
+    `Basic ${Buffer.from('synthetic-key:').toString('base64')}`,
+  );
+  expect(requests[1].url.pathname).toContain('/v1/electricity-meter-points/');
+  expect(requests[1].url.searchParams.get('period_from')).toBe('2024-03-01T00:00:00Z');
+  expect(requests[1].url.searchParams.get('period_to')).toBe('2024-03-02T00:00:00Z');
+  expect(requests[1].url.searchParams.get('page_size')).toBe('1500');
+  await page.getByRole('button', { name: 'Review coverage' }).click();
+  await expect(page.getByText('100.0%', { exact: true })).toBeVisible();
+  await finishComparison(page, { electricityOnly: true });
+  await expect(page.getByText('12 kWh electricity · 0 kWh gas')).toBeVisible();
+  expect(
+    await page.evaluate(async () => JSON.stringify({ ...localStorage, ...sessionStorage })),
+  ).not.toContain('synthetic-key');
+});
+
+test('SmartFlex device discovery, measured session review and comparison', async ({ page }) => {
+  const requests: Array<{
+    body: { query: string; variables: Record<string, string> };
+    token: string;
+  }> = [];
+  await page.route('https://api.octopus.energy/v1/graphql/', async (route) => {
+    const request = route.request();
+    const body = request.postDataJSON() as {
+      query: string;
+      variables: Record<string, string>;
+    };
+    requests.push({ body, token: (await request.allHeaders()).authorization });
+    const data = body.query.startsWith('query Devices')
+      ? { devices: [{ id: 'SYNTHETIC-DEVICE', __typename: 'SmartFlexVehicle' }] }
+      : {
+          devices: [
+            {
+              chargingSessions: {
+                edges: [
+                  {
+                    node: {
+                      start: '2024-03-10T11:00:00Z',
+                      end: '2024-03-10T12:00:00Z',
+                      energyAdded: { value: '1500', unit: 'WATT_HOUR' },
+                    },
+                  },
+                ],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          ],
+        };
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ data }),
+    });
+  });
+
+  await syntheticImport(page);
+  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  await page.getByLabel('Charging integration', { exact: true }).selectOption('octopus-smartflex');
+  await page.getByLabel('SmartFlex account number').fill('A-SYNTHETIC');
+  await page.getByLabel('Octopus GraphQL access token').fill('synthetic-token');
+  await page.getByRole('button', { name: 'Connect charging provider' }).click();
+  await expect(page.getByLabel('Device')).toHaveValue(/.+/);
+  await expect(page.getByLabel('Octopus GraphQL access token')).toHaveValue('');
+  await page.getByRole('button', { name: 'Fetch charging history' }).click();
+  await expect(page.getByRole('heading', { name: 'Review 1 sessions' })).toBeVisible();
+  await expect(page.getByLabel('Energy kWh')).toHaveValue('1.5');
+  await expect(page.getByLabel('Confirmed provenance')).toHaveValue('unknown');
+  await expect(
+    page.getByText(/reports session energy, not measured household grid energy/),
+  ).toBeVisible();
+  expect(requests).toHaveLength(2);
+  expect(requests.map(({ body }) => body.variables.account)).toEqual([
+    'A-SYNTHETIC',
+    'A-SYNTHETIC',
+  ]);
+  expect(requests.map(({ token }) => token)).toEqual(['synthetic-token', 'synthetic-token']);
+  await finishComparison(page, { chargingStepOpen: true });
+  expect(
+    await page.evaluate(async () => JSON.stringify({ ...localStorage, ...sessionStorage })),
+  ).not.toContain('synthetic-token');
+});
+
+test('Pod Point CSV filters public sessions and preserves the home-grid amount through comparison', async ({
+  page,
+}) => {
+  await syntheticImport(page);
+  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  await page.getByLabel('Charging integration', { exact: true }).selectOption('pod-point');
+  await page.getByLabel('Charging file').setInputFiles({
+    name: 'synthetic-pod-point.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(
+      'Date,Start time,End time,Total kWh Consumed,kWh Grid (Home),Location type\n10/03/2024,11:25,14:52,30.12,10,home\n10/03/2024,15:00,17:00,20,,public',
+    ),
+  });
+  await page.getByRole('button', { name: 'Preview mapping and sessions' }).click();
+  await expect(page.getByRole('heading', { name: 'Review 1 sessions' })).toBeVisible();
+  await expect(page.getByLabel('Energy kWh')).toHaveValue('10');
+  await expect(page.getByLabel('Confirmed provenance')).toHaveValue('grid');
+  await expect(page.getByText(/Public and unrecognised locations excluded/)).toBeVisible();
+  await expect(
+    page.getByText(/Names, addresses and device identifiers are discarded/),
+  ).toBeVisible();
+  await finishComparison(page, { chargingStepOpen: true });
+});
+
+test('generic JSON charging import reviews unknown attribution before tariff replay', async ({
+  page,
+}) => {
+  await syntheticImport(page);
+  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  await page.getByLabel('Charging integration', { exact: true }).selectOption('generic-file');
+  await page.getByLabel('Charging file').setInputFiles({
+    name: 'synthetic-sessions.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify([
+        {
+          start: '2024-03-10T11:00:00Z',
+          end: '2024-03-10T12:00:00Z',
+          kWh: '2.5',
+          name: 'Synthetic driver',
+          address: '1 Synthetic Lane',
+        },
+      ]),
+    ),
+  });
+  await page.getByRole('button', { name: 'Preview mapping and sessions' }).click();
+  await expect(page.getByRole('heading', { name: 'Review 1 sessions' })).toBeVisible();
+  await expect(page.getByLabel('Energy kWh')).toHaveValue('2.5');
+  await expect(page.getByLabel('Confirmed provenance')).toHaveValue('unknown');
+  await expect(page.getByText('Synthetic driver')).toHaveCount(0);
+  await expect(page.getByText('1 Synthetic Lane')).toHaveCount(0);
+  await finishComparison(page, { chargingStepOpen: true });
 });
 
 test('finds the lowest compatible open tariff without a current baseline', async ({ page }) => {

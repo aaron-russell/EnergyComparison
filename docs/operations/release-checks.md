@@ -16,11 +16,36 @@ npm run test:e2e
 Pull request CI also reviews dependency changes and smoke-tests the deployed Pages preview. Nightly CI
 runs the browser suite in Firefox and WebKit; Chromium runs for every pull request. After production
 deployment, an automated smoke check verifies the public domain's routes, security headers, assets,
-robots file, sitemap, and 404 response.
+robots file, sitemap, and 404 response. The deployment workflow then runs the synthetic Playwright
+browser workflows against the production domain. Its GitHub Actions summary records the deployed
+commit and whether each hosted check passed.
 
 Then verify the combined preview at `/` and `/docs/`. Synthetic workflows prove contracts, parsing,
 calculation, accessibility, and build behavior only. They do not prove live provider compatibility,
 real-account CORS, credentials, DNS, or every export variant.
+
+## Per-release evidence record
+
+Complete this record for each production deployment before making a live-compatibility claim. Link
+the GitHub Actions deployment run for the automated results. Use `passed`, `failed`, or `not run` for
+each manual check; do not infer a pass from CI, a previous release, or another provider. A provider
+claim is limited to the provider, report format/version, and checks marked passed for this deployment.
+Never include account, supply, meter, device, credential, or consumption identifiers.
+
+| Evidence                                                                                    | Result | Notes                                      |
+| ------------------------------------------------------------------------------------------- | ------ | ------------------------------------------ |
+| Deployed commit and deployment run                                                          |        |                                            |
+| Hosted HTTP smoke                                                                           |        |                                            |
+| Hosted synthetic browser workflows                                                          |        |                                            |
+| Hosted manual checks (routes, CSP, MIME, workers, import/export, HTTPS, self-hosted assets) |        |                                            |
+| Octopus authenticated gate                                                                  |        | Provider/API version and test date only    |
+| SmartFlex authenticated gate                                                                |        | Provider/API version and test date only    |
+| Pod Point legacy report variant                                                             |        | Redacted report version and test date only |
+| Pod Point current report variant                                                            |        | Redacted report version and test date only |
+
+The GitHub Actions summary is evidence for the hosted HTTP and synthetic browser rows only. Record
+manual results in the release record and retain it with the release notes. If a check was not run or
+failed, state that plainly and narrow any compatibility wording accordingly.
 
 ## Authenticated Octopus gate
 

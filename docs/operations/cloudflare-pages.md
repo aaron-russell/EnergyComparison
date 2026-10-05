@@ -46,13 +46,17 @@ noindex`; the production custom domain does not.
 The deploy workflow requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. CI runs formatting
 and lint, coverage, build and site checks, dependency review, and Chromium E2E in parallel jobs. E2E
 uses the build artifact. A hosted smoke check runs against each same-repository PR preview and after
-production deployment. A separate nightly workflow runs the E2E suite in Firefox and WebKit.
+production deployment. After production deployment, the workflow also runs the synthetic Chromium
+browser workflows against the public domain and records both hosted results in its Actions summary.
+A separate nightly workflow runs the E2E suite in Firefox and WebKit.
 
 Dependency review requires GitHub's dependency graph and, for private repositories, a GitHub plan
 that supports Dependency Review. It blocks newly introduced high or critical vulnerabilities. Hosted
 smoke checks verify the primary HTML routes, CSP and security headers, fingerprinted assets, robots,
-sitemap, and 404 behavior. Publishing still does not prove live provider compatibility, real-account
-CORS behavior, DNS correctness, or production secrets.
+sitemap, and 404 behavior. The hosted browser workflows exercise the synthetic application journey.
+Publishing still does not prove live provider compatibility, real-account CORS behavior, DNS
+correctness, or production secrets; record those checks separately using the per-release evidence
+table in the release checklist.
 
 This repository uses the GitHub Actions deployment path. Disable Cloudflare Pages automatic Git
 deployment for `energy-replay` before enabling it, or each push to `main` can create a competing
