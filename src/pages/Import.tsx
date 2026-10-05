@@ -3,17 +3,16 @@ import { Download, CalendarDays } from 'lucide-react';
 import type { EnergyConnection } from '../adapters/contracts';
 import { IntegrationError } from '../adapters/contracts';
 import { normaliseReadings } from '../core/readings';
-import { dates, localDate, midnight } from '../core/time';
+import { dates, midnight } from '../core/time';
 import type { Reading } from '../core/types';
 import type { SessionProps } from '../state/session';
 import { useOperation } from '../state/use-operation';
+import { useImportUi } from '../state/use-session-ui';
 import { ErrorNotice, NextButton, OperationStatus, PageHeading } from '../components/Shared';
 
 type Props = SessionProps & { connection: EnergyConnection | null };
-export function ImportPage({ data, update, next, connection }: Props) {
-  const [start, setStart] = useState(localDate(data.period.start));
-  const [end, setEnd] = useState(localDate(data.period.end));
-  const [selected, setSelected] = useState(data.supplies.map((supply) => supply.ref));
+export function ImportPage({ data, update, next, connection, ui, updateUi }: Props) {
+  const { start, end, selected, setStart, setEnd, setSelected } = useImportUi(data, ui, updateUi);
   const [failures, setFailures] = useState<string[]>([]);
   const operation = useOperation();
   const importHistory = () =>
@@ -66,6 +65,7 @@ export function ImportPage({ data, update, next, connection }: Props) {
           busy={operation.busy}
         />
         <ErrorNotice message={operation.error} />
+        {!connection && <ReconnectNotice />}
         <button
           className="primary"
           disabled={operation.busy || !connection || !selected.length}
@@ -88,6 +88,15 @@ export function ImportPage({ data, update, next, connection }: Props) {
         </NextButton>
       </section>
     </>
+  );
+}
+
+function ReconnectNotice() {
+  return (
+    <div className="notice" role="status">
+      Refresh restored your progress, but provider credentials are never saved. Reconnect on the
+      Connect step to import or retry history.
+    </div>
   );
 }
 

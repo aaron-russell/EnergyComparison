@@ -8,12 +8,18 @@ export function TariffEditor({
   initial,
   apply,
   cancel,
+  changeDraft,
 }: {
   initial: Tariff;
   apply: (tariff: Tariff) => void;
   cancel: () => void;
+  changeDraft?: (tariff: Tariff) => void;
 }) {
   const [tariff, setTariff] = useState(initial);
+  const change = (next: Tariff) => {
+    setTariff(next);
+    changeDraft?.(next);
+  };
   const [error, setError] = useState('');
   const submit = () => {
     try {
@@ -34,14 +40,14 @@ export function TariffEditor({
           submit();
         }}
       >
-        <TariffIdentity tariff={tariff} change={setTariff} />
-        <FuelRates tariff={tariff} change={setTariff} />
+        <TariffIdentity tariff={tariff} change={change} />
+        <FuelRates tariff={tariff} change={change} />
         <PriceInput
           label="Fixed annual credit (pence/year)"
           value={tariff.annualCredit}
-          change={(annualCredit) => setTariff({ ...tariff, annualCredit })}
+          change={(annualCredit) => change({ ...tariff, annualCredit })}
         />
-        <EVRate tariff={tariff} change={setTariff} />
+        <EVRate tariff={tariff} change={change} />
         <ErrorNotice message={error} />
         <div className="actions">
           <button className="primary" type="submit">

@@ -201,6 +201,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
 
 async function syntheticImport(page: Page) {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
   await page.getByRole('button', { name: 'Choose import period' }).click();
@@ -219,6 +220,7 @@ async function compareSyntheticPeriod(
   electricityOnly = false,
 ) {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
   await page.getByRole('button', { name: 'Choose import period' }).click();
@@ -236,6 +238,7 @@ async function compareSyntheticPeriod(
     await expect(page.getByText('Generating synthetic intervals', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
   }
+  await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0, { timeout: 120000 });
   await expect(page.getByRole('button', { name: 'Review coverage' })).toBeEnabled();
   await page.getByRole('button', { name: 'Review coverage' }).click();
   await page.getByRole('button', { name: 'Review optional EV charging' }).click();
@@ -341,7 +344,7 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
     session: { ...sessionStorage },
   }));
   expect(Object.keys(storage.local)).toEqual(['energy-replay:saved-tariffs']);
-  expect(storage.session).toEqual({});
+  expect(Object.keys(storage.session)).toEqual(['energy-replay:session']);
   await page.getByRole('button', { name: 'Clear session' }).click();
   await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
 });
@@ -454,11 +457,31 @@ test('manual baseline editing, duplication, validation and persistence', async (
   await page.reload();
   await page.getByRole('button', { name: 'Tariffs 05' }).click();
   await expect(page.getByRole('heading', { name: 'My current tariff' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Alternative', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Alternative', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Delete', exact: true }).first().click();
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('energy-replay:saved-tariffs')!)),
   ).toEqual([]);
+});
+
+test('restores tab progress after refresh without restoring credentials', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load complete demo' }).click();
+  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
+    timeout: 120000,
+  });
+  const before = await page.evaluate(() => sessionStorage.getItem('energy-replay:session'));
+  expect(before).toBeTruthy();
+  expect(before).not.toMatch(/apiKey|accountNumber|token/i);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Replay these tariffs' })).toBeVisible();
+  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
+    timeout: 120000,
+  });
+  await page.getByRole('button', { name: 'Clear session' }).click();
+  expect(await page.evaluate(() => sessionStorage.getItem('energy-replay:session'))).toBeNull();
 });
 
 test('accessibility, keyboard focus and responsive layouts in both themes', async ({ page }) => {

@@ -28,7 +28,7 @@ export const appSeo: Record<AppStep, Omit<SeoMetadata, 'path'>> = {
   1: {
     title: 'Import energy history | Energy Replay',
     description:
-      'Import half-hour electricity and gas history into Energy Replay while keeping credentials and readings in your browser session.',
+      'Import half-hour electricity and gas history into Energy Replay while keeping credentials out of storage and progress in your browser tab.',
     includeApplication: true,
   },
   2: {

@@ -8,13 +8,15 @@ import type { SessionProps } from '../state/session';
 import { ApiChargingForm, FileChargingForm } from '../components/ChargingForms';
 import { ChargingReview } from '../components/ChargingReview';
 import { ErrorNotice, NextButton, PageHeading } from '../components/Shared';
+import { useChargingUi } from '../state/use-session-ui';
 
-export function ChargingPage({ data, update, next }: SessionProps) {
-  const [providerId, setProviderId] = useState(chargingProviders[0].id);
-  const [supplyRef, setSupplyRef] = useState(
-    data.supplies.find((supply) => supply.fuel === 'electricity')?.ref ?? '',
+export function ChargingPage({ data, update, next, ui, updateUi }: SessionProps) {
+  const { providerId, supplyRef, power, setProviderId, setSupplyRef, setPower } = useChargingUi(
+    data,
+    ui,
+    updateUi,
+    chargingProviders[0].id,
   );
-  const [power, setPower] = useState('7');
   const [preview, setPreview] = useState<ChargingPreview | null>(null);
   const [error, setError] = useState('');
   const provider = chargingProviders.find((item) => item.id === providerId)!;

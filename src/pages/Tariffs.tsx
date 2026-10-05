@@ -9,9 +9,10 @@ import type { SessionProps } from '../state/session';
 import { TariffEditor } from '../components/TariffEditor';
 import { ErrorNotice, NextButton, PageHeading } from '../components/Shared';
 import { fetchTariffs, lookupRegion } from '../adapters/tarifftracker';
+import { useTariffLocation, useTariffUi } from '../state/use-session-ui';
 
-export function TariffsPage({ data, update, next }: SessionProps) {
-  const [draft, setDraft] = useState<Tariff | null>(null);
+export function TariffsPage({ data, update, next, ui, updateUi }: SessionProps) {
+  const { draft, setDraft, postcode, region, changeLocation } = useTariffUi(ui, updateUi);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const merge = (tariffs: Tariff[]) =>
@@ -45,46 +46,93 @@ export function TariffsPage({ data, update, next }: SessionProps) {
   const importFile = (file: File) => readTariffFile(file, merge, setError);
   return (
     <>
-      <PageHeading eyebrow="05 / TARIFFS" title="Your rates. Your alternatives.">
-        Enter today’s tariff as your baseline, or load open supplier tariffs from Tariff Tracker.
-        Prices stay fixed throughout this historical replay.
-      </PageHeading>
+      <TariffsHeading />
       <TariffToolbar
         add={() => setDraft(blankTariff())}
         examples={() => merge(structuredClone(exampleTariffs))}
         exportAll={() => exportTariffs(data.tariffs)}
         importFile={importFile}
+        merge={merge}
+        next={next}
+        update={update}
+        postcode={postcode}
+        region={region}
+        changeLocation={changeLocation}
       />
       <ErrorNotice message={error} />
       <p role="status">{message}</p>
-      <TariffTrackerImport merge={merge} next={next} update={update} />
       {draft && (
-        <TariffEditor key={draft.id} initial={draft} apply={apply} cancel={() => setDraft(null)} />
+        <TariffEditor
+          key={draft.id}
+          initial={draft}
+          apply={apply}
+          cancel={() => setDraft(null)}
+          changeDraft={setDraft}
+        />
       )}
-      <div className="tariff-grid">
-        {data.tariffs.map((tariff) => (
-          <TariffCard
-            key={tariff.id}
-            tariff={tariff}
-            baseline={tariff.id === data.baselineId}
-            choose={() => update({ baselineId: tariff.id })}
-            edit={() => setDraft(structuredClone(tariff))}
-            save={() => save(tariff)}
-            duplicate={() =>
-              setDraft({
-                ...structuredClone(tariff),
-                id: crypto.randomUUID(),
-                name: `${tariff.name} copy`,
-              })
-            }
-            remove={() => remove(tariff)}
-          />
-        ))}
-      </div>
+      <TariffCards
+        tariffs={data.tariffs}
+        baselineId={data.baselineId}
+        choose={(baselineId) => update({ baselineId })}
+        edit={(tariff) => setDraft(structuredClone(tariff))}
+        save={save}
+        duplicate={(tariff) =>
+          setDraft({
+            ...structuredClone(tariff),
+            id: crypto.randomUUID(),
+            name: `${tariff.name} copy`,
+          })
+        }
+        remove={remove}
+      />
       <NextButton onClick={next} disabled={data.tariffs.length < 2 || !data.baselineId}>
         Compare tariffs
       </NextButton>
     </>
+  );
+}
+
+function TariffsHeading() {
+  return (
+    <PageHeading eyebrow="05 / TARIFFS" title="Your rates. Your alternatives.">
+      Enter today’s tariff as your baseline, or load open supplier tariffs from Tariff Tracker.
+      Prices stay fixed throughout this historical replay.
+    </PageHeading>
+  );
+}
+
+function TariffCards({
+  tariffs,
+  baselineId,
+  choose,
+  edit,
+  save,
+  duplicate,
+  remove,
+}: {
+  tariffs: Tariff[];
+  baselineId: string;
+  choose: (id: string) => void;
+  edit: (tariff: Tariff) => void;
+  save: (tariff: Tariff) => void;
+  duplicate: (tariff: Tariff) => void;
+  remove: (tariff: Tariff) => void;
+}) {
+  return (
+    <div className="tariff-grid">
+      {tariffs.map((tariff) => (
+        <TariffCard
+          key={tariff.id}
+          tariff={tariff}
+          baseline={tariff.id === baselineId}
+          choose={() => choose(tariff.id)}
+          edit={() => edit(tariff)}
+          save={() => save(tariff)}
+          duplicate={() => duplicate(tariff)}
+          remove={() => remove(tariff)}
+        />
+      ))}
+    </div>
   );
 }
 function TariffToolbar({
@@ -92,11 +140,23 @@ function TariffToolbar({
   examples,
   exportAll,
   importFile,
+  merge,
+  next,
+  update,
+  postcode,
+  region,
+  changeLocation,
 }: {
   add: () => void;
   examples: () => void;
   exportAll: () => void;
   importFile: (file: File) => Promise<void>;
+  merge: (tariffs: Tariff[]) => void;
+  next: () => void;
+  update: SessionProps['update'];
+  postcode: string;
+  region: string;
+  changeLocation: (postcode: string, region: string) => void;
 }) {
   return (
     <div className="panel">
@@ -122,9 +182,17 @@ function TariffToolbar({
           }}
         />
       </label>
+      <TariffTrackerImport
+        merge={merge}
+        next={next}
+        update={update}
+        postcode={postcode}
+        region={region}
+        changeLocation={changeLocation}
+      />
       <p className="muted">
-        Saving is explicit. Refreshing clears unsaved definitions. Export includes tariff
-        definitions only.
+        Saving is explicit. Progress and unsaved definitions stay in this tab through refresh;
+        export includes tariff definitions only.
       </p>
     </div>
   );
@@ -134,9 +202,20 @@ function TariffTrackerImport({
   merge,
   next,
   update,
-}: Pick<SessionProps, 'update' | 'next'> & { merge: (tariffs: Tariff[]) => void }) {
-  const [postcode, setPostcode] = useState('');
-  const [region, setRegion] = useState('');
+  postcode,
+  region,
+  changeLocation,
+}: Pick<SessionProps, 'update' | 'next'> & {
+  merge: (tariffs: Tariff[]) => void;
+  postcode: string;
+  region: string;
+  changeLocation: (postcode: string, region: string) => void;
+}) {
+  const { postcodeValue, regionValue, changePostcode, changeRegion } = useTariffLocation(
+    postcode,
+    region,
+    changeLocation,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sourceNote, setSourceNote] = useState('');
@@ -150,12 +229,12 @@ function TariffTrackerImport({
     setCaveats([]);
     try {
       const { resolvedRegion, tariffs, offers, asOf, caveats } = await requestTariffs(
-        postcode,
-        region,
+        postcodeValue,
+        regionValue,
         requestController.signal,
       );
       if (!requestController.signal.aborted) {
-        setRegion(resolvedRegion);
+        changeRegion(resolvedRegion);
         merge(tariffs);
         update({
           tariffOffers: offers,
@@ -185,6 +264,42 @@ function TariffTrackerImport({
     }
   };
   return (
+    <TariffTrackerControls
+      postcode={postcodeValue}
+      region={regionValue}
+      changePostcode={changePostcode}
+      changeRegion={changeRegion}
+      load={load}
+      loading={loading}
+      error={error}
+      sourceNote={sourceNote}
+      caveats={caveats}
+    />
+  );
+}
+
+function TariffTrackerControls({
+  postcode,
+  region,
+  changePostcode,
+  changeRegion,
+  load,
+  loading,
+  error,
+  sourceNote,
+  caveats,
+}: {
+  postcode: string;
+  region: string;
+  changePostcode: (value: string) => void;
+  changeRegion: (value: string) => void;
+  load: (guided?: boolean) => Promise<void>;
+  loading: boolean;
+  error: string;
+  sourceNote: string;
+  caveats: string[];
+}) {
+  return (
     <div className="tariff-tracker-import">
       <div>
         <strong>Find tariffs from Tariff Tracker</strong>
@@ -192,18 +307,54 @@ function TariffTrackerImport({
           Use a postcode to resolve your electricity region, or enter the region directly.
         </p>
       </div>
-      <TariffSearchFields
-        postcode={postcode}
-        region={region}
-        loading={loading}
-        setPostcode={setPostcode}
-        setRegion={setRegion}
-        load={load}
-      />
+      <TariffTrackerFields {...{ postcode, region, changePostcode, changeRegion, load, loading }} />
       <ErrorNotice message={error} />
       <p role="status">{sourceNote}</p>
       <TariffCaveats caveats={caveats} />
       <TariffTrackerDisclosure />
+    </div>
+  );
+}
+
+function TariffTrackerFields({
+  postcode,
+  region,
+  changePostcode,
+  changeRegion,
+  load,
+  loading,
+}: {
+  postcode: string;
+  region: string;
+  changePostcode: (value: string) => void;
+  changeRegion: (value: string) => void;
+  load: (guided?: boolean) => Promise<void>;
+  loading: boolean;
+}) {
+  return (
+    <div className="form-row">
+      <label className="field">
+        Postcode
+        <input
+          value={postcode}
+          onChange={(event) => changePostcode(event.target.value)}
+          placeholder="L1 1AA"
+        />
+      </label>
+      <label className="field">
+        Electricity region
+        <input
+          value={region}
+          onChange={(event) => changeRegion(event.target.value)}
+          placeholder="Yorkshire"
+        />
+      </label>
+      <button type="button" onClick={() => void load()} disabled={loading}>
+        {loading ? 'Loading…' : 'Load tariffs'}
+      </button>
+      <button type="button" className="primary" onClick={() => void load(true)} disabled={loading}>
+        {loading ? 'Loading…' : 'Find cheapest for this usage'}
+      </button>
     </div>
   );
 }
@@ -218,49 +369,6 @@ function TariffCaveats({ caveats }: { caveats: string[] }) {
         <li key={`${index}-${caveat}`}>{caveat}</li>
       ))}
     </ul>
-  );
-}
-
-function TariffSearchFields({
-  postcode,
-  region,
-  loading,
-  setPostcode,
-  setRegion,
-  load,
-}: {
-  postcode: string;
-  region: string;
-  loading: boolean;
-  setPostcode: (value: string) => void;
-  setRegion: (value: string) => void;
-  load: (guided?: boolean) => Promise<void>;
-}) {
-  return (
-    <div className="form-row">
-      <label className="field">
-        Postcode
-        <input
-          value={postcode}
-          onChange={(event) => setPostcode(event.target.value)}
-          placeholder="L1 1AA"
-        />
-      </label>
-      <label className="field">
-        Electricity region
-        <input
-          value={region}
-          onChange={(event) => setRegion(event.target.value)}
-          placeholder="Yorkshire"
-        />
-      </label>
-      <button type="button" onClick={() => void load()} disabled={loading}>
-        {loading ? 'Loading…' : 'Load tariffs'}
-      </button>
-      <button type="button" className="primary" onClick={() => void load(true)} disabled={loading}>
-        {loading ? 'Loading…' : 'Find cheapest for this usage'}
-      </button>
-    </div>
   );
 }
 

@@ -17,6 +17,13 @@ import { midnight } from '../src/core/time';
 import { replay } from '../src/core/engine';
 import type { ChargingPreview, ChargingProviderAdapter } from '../src/adapters/contracts';
 import type { SessionData } from '../src/state/session';
+import type { SessionUi } from '../src/state/session';
+import {
+  clearSessionSnapshot,
+  loadSessionSnapshot,
+  saveSessionSnapshot,
+  SESSION_STORAGE_KEY,
+} from '../src/state/session-storage';
 
 const period = { start: midnight('2024-03-01'), end: midnight('2024-03-02') };
 const baseData = (patch: Partial<SessionData> = {}): SessionData => ({
@@ -40,9 +47,31 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 describe('replay state and tariff persistence', () => {
+  it('round-trips tab progress, rejects invalid snapshots, and clears safely', () => {
+    const ui: SessionUi = {
+      import: { start: '2024-03-01', end: '2024-04-01', selected: ['electricity'] },
+      coverage: { bills: [{ supplyRef: 'supply', month: '2024-03', kWh: '20' }], uniform: true },
+      charging: { providerId: 'synthetic', supplyRef: 'electricity', power: '7' },
+      tariffs: { draft: structuredClone(exampleTariffs[0]), postcode: 'L1 1AA', region: '' },
+    };
+    const data = baseData({ readings: [], supplies: [], tariffs: [] });
+    saveSessionSnapshot({ version: 1, step: 4, data, ui });
+    expect(loadSessionSnapshot()).toMatchObject({ version: 1, step: 4, data, ui });
+    expect(JSON.stringify(sessionStorage.getItem(SESSION_STORAGE_KEY))).not.toMatch(
+      /apiKey|accountNumber/,
+    );
+    sessionStorage.setItem(SESSION_STORAGE_KEY, '{bad');
+    expect(loadSessionSnapshot()).toBeNull();
+    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ version: 99 }));
+    expect(loadSessionSnapshot()).toBeNull();
+    clearSessionSnapshot();
+    expect(sessionStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
+  });
+
   it('prepares observed, estimated, fuel and renewable replay jobs', () => {
     const data = baseData({
       estimated: { readings: [], estimated: [], coverage: 1, estimatedShare: '2.0', notes: [] },
