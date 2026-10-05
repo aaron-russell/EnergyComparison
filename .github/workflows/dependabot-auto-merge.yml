@@ -1,0 +1,37 @@
+name: Dependabot auto-merge
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Dependabot update type
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for patch and minor updates
+        if: contains(fromJSON('["version-update:semver-patch", "version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
+        run: >-
+          gh api graphql
+          -f query='mutation($pullRequestId: ID!) {
+            enablePullRequestAutoMerge(input: {
+              pullRequestId: $pullRequestId,
+              mergeMethod: SQUASH
+            }) {
+              pullRequest { number }
+            }
+          }'
+          -f pullRequestId="$PR_NODE_ID"
