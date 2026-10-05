@@ -71,9 +71,15 @@ unknown energy provenance.
 - Use synthetic data in tests and commits. Never commit API keys, provider tokens, account details,
   meter/device identifiers, real consumption, real exports, or screenshots containing them.
 - Credentials, imports, identifiers, and results are intended to remain in memory. Do not add
-  sensitive localStorage/sessionStorage, analytics, service workers, tracking, or application logs.
+  sensitive localStorage/sessionStorage, analytics beyond the approved Cloudflare Web Analytics
+  beacon, service workers, tracking, or application logs.
 - Preserve the two documented localStorage keys only: `energy-replay:saved-tariffs` and
   `energy-replay:theme`. Tariff exports must contain tariff definitions only.
+- Cloudflare Web Analytics may collect aggregate site usage and performance statistics to improve
+  the service. Keep Zaraz and all other analytics disabled. The privacy page must provide a clear,
+  free opt-out using the one-year first-party `energy-replay-analytics-opt-out` cookie; the app must
+  not load the beacon when that preference is set. Describe the preference cookie in the privacy
+  policy and cover both default loading and opt-out behavior in browser tests.
 - Treat `npm run test:e2e` as a production-preview test: it verifies CSP, workers, accessibility,
   storage clearing, responsive layouts, synthetic integrations, and tariff export behavior.
 
@@ -91,7 +97,8 @@ unknown energy provenance.
 - The app is static and has no Pages Functions, API proxy, server bindings, database, or runtime
   secret. Provider requests originate in the browser to fixed origins.
 - Preserve `public/_headers` and verify CSP, HTTPS, MIME types, worker loading, and SPA fallback
-  after hosting changes. Keep Cloudflare Web Analytics and Zaraz disabled.
+  after hosting changes. Keep Cloudflare Web Analytics enabled with its privacy-page opt-out, and
+  keep Zaraz disabled.
 - Before a live release, run the documented authenticated Octopus, SmartFlex, Pod Point, and
   hosted release checks in `docs/release-checks.md`; synthetic CI does not prove live compatibility.
 
