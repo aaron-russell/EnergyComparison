@@ -13,6 +13,11 @@ npm run docs:check
 npm run test:e2e
 ```
 
+Pull request CI also reviews dependency changes and smoke-tests the deployed Pages preview. Nightly CI
+runs the browser suite in Firefox and WebKit; Chromium runs for every pull request. After production
+deployment, an automated smoke check verifies the public domain's routes, security headers, assets,
+robots file, sitemap, and 404 response.
+
 Then verify the combined preview at `/` and `/docs/`. Synthetic workflows prove contracts, parsing,
 calculation, accessibility, and build behavior only. They do not prove live provider compatibility,
 real-account CORS, credentials, DNS, or every export variant.

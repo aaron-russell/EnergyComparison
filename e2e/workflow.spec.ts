@@ -111,6 +111,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
     '/docs/operations/cloudflare-workers.html',
     '/docs/operations/privacy-and-security.html',
     '/docs/operations/release-checks.html',
+    '/docs/privacy.html',
     '/docs/projects/energy-replay.html',
     '/docs/reference/contracts.html',
     '/docs/reference/data-model.html',

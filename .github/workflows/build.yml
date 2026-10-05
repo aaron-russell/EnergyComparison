@@ -1,0 +1,25 @@
+name: Production build and site checks
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run headers:check
+      - run: node scripts/check-docs.mjs
+      - run: node scripts/audit-internal-links.mjs
+      - name: Upload production build
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1

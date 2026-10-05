@@ -16,7 +16,7 @@ postal address. Use these channels instead:
   [SECURITY.md](https://github.com/aaron-russell/EnergyComparison/blob/main/SECURITY.md). Do not
   disclose credentials, account numbers, meter identifiers, or real consumption records in a public
   issue.
-- LinkedIn: **Owner to supply the profile URL**.
+- Russell Tech website: [russell-tech.co.uk](https://russell-tech.co.uk/).
 
 For provider access or account compatibility, use the release checks and support channels of the
 relevant provider. Energy Replay does not operate a server-side account support channel.
