@@ -66,7 +66,7 @@ jobs:
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: workflowRun.head_sha,
+              ref: workflowRun.head_branch,
               task: 'deploy',
               auto_merge: false,
               required_contexts: [],
