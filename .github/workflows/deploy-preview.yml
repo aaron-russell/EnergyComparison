@@ -47,13 +47,44 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=energy-replay --branch=pr-${{ github.event.workflow_run.pull_requests[0].number }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Smoke test hosted preview
         env:
           SITE_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
           EXPECT_NOINDEX: 'true'
         run: node scripts/smoke-hosted-site.mjs
+
+      - name: Register PR branch deployment
+        uses: actions/github-script@v9
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflowRun = context.payload.workflow_run;
+            const pullRequest = workflowRun.pull_requests[0];
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: workflowRun.head_sha,
+              task: 'deploy',
+              auto_merge: false,
+              required_contexts: [],
+              environment: 'preview',
+              description: `Cloudflare Pages preview for PR #${pullRequest.number}`,
+              transient_environment: true,
+              production_environment: false,
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'success',
+              environment_url: process.env.PREVIEW_URL,
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${workflowRun.id}`,
+              description: 'Cloudflare Pages preview passed hosted smoke checks',
+            });
 
       - name: Comment preview URL on pull request
         uses: actions/github-script@v9
