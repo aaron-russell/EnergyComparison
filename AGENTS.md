@@ -34,16 +34,16 @@ check`, installs Chromium, and runs `npm run test:e2e` on every push and pull re
 Before completing an implementation task:
 
 - [ ] Run `npm run check` to verify formatting, linting, type checking, unit tests, and the
-  production build.
+      production build.
 - [ ] Run `npm run test:e2e` for changes that affect user journeys, browser behavior, integrations,
-  accessibility, storage, security headers, or production hosting. Run it for other implementation
-  changes when the affected behavior is covered by an E2E workflow.
+      accessibility, storage, security headers, or production hosting. Run it for other implementation
+      changes when the affected behavior is covered by an E2E workflow.
 - [ ] Run any additional focused checks required by the changed area, such as schema generation or
-  adapter contract tests.
+      adapter contract tests.
 - [ ] Review the final diff and `git status`; ensure generated files are current and no unrelated or
-  sensitive data was added.
+      sensitive data was added.
 - [ ] Report each check run and its result. If an expected check cannot run, state why and leave it
-  explicitly unverified rather than treating it as passing.
+      explicitly unverified rather than treating it as passing.
 
 Do not mark a task complete until the applicable checklist items are addressed.
 
