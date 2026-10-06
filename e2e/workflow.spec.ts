@@ -151,7 +151,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
   expect(appRedirect.headers().location).toBe('/app/');
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Privacy', exact: true })).toBeVisible();
   expect(
     (
       await new AxeBuilder({ page })
@@ -159,7 +159,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
         .analyze()
     ).violations,
   ).toEqual([]);
-  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByRole('link', { name: 'Search the handbook' }).click();
   const search = page.locator('#localsearch-input');
   await expect(search).toBeVisible();
   await search.fill('Tariffs and comparison');

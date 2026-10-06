@@ -14,7 +14,8 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       pathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
-      maxDiffPixelRatio: 0.02,
+      // macOS baselines render slightly differently from the Ubuntu CI runner.
+      maxDiffPixelRatio: 0.06,
     },
   },
   projects: [

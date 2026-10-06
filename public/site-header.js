@@ -1,25 +1,81 @@
+const svgNamespace = 'http://www.w3.org/2000/svg';
+
+function createLink(href, text, className = '') {
+  const link = document.createElement('a');
+  link.href = href;
+  link.textContent = text;
+  if (className) link.className = className;
+  return link;
+}
+
+function createSearchIcon() {
+  const icon = document.createElementNS(svgNamespace, 'svg');
+  icon.setAttribute('viewBox', '0 0 20 20');
+  icon.setAttribute('aria-hidden', 'true');
+  const circle = document.createElementNS(svgNamespace, 'circle');
+  circle.setAttribute('cx', '8.7');
+  circle.setAttribute('cy', '8.7');
+  circle.setAttribute('r', '5.7');
+  const handle = document.createElementNS(svgNamespace, 'path');
+  handle.setAttribute('d', 'm13 13 4 4');
+  icon.append(circle, handle);
+  return icon;
+}
+
+function createBrand() {
+  const brand = createLink('/', '', 'er-site-brand');
+  brand.setAttribute('aria-label', 'Energy Replay home');
+  const logo = document.createElement('img');
+  logo.src = '/logo.svg';
+  logo.alt = '';
+  logo.width = 40;
+  logo.height = 40;
+  const copy = document.createElement('span');
+  copy.className = 'er-site-brand-copy';
+  copy.append(document.createTextNode('Energy Replay'));
+  const byline = document.createElement('small');
+  byline.textContent = 'BY RUSSELL TECH';
+  copy.append(byline);
+  brand.append(logo, copy);
+  return brand;
+}
+
+function createNavigation(appIsCurrent) {
+  const navigation = document.createElement('nav');
+  navigation.className = 'er-site-menu';
+  navigation.setAttribute('aria-label', 'Main navigation');
+  navigation.append(
+    createLink('/docs/guide/using-the-app.html', 'How it works'),
+    createLink('/docs/guide/privacy-and-energy-data.html', 'Privacy'),
+    createLink('/docs/about.html', 'About'),
+  );
+  const search = createLink('/docs/?search=1', '', 'er-site-search');
+  search.setAttribute('aria-label', 'Search the handbook');
+  search.addEventListener('click', (event) => {
+    const searchButton = document.querySelector('.DocSearch-Button');
+    if (window.location.pathname.startsWith('/docs/') && searchButton) {
+      event.preventDefault();
+      searchButton.click();
+    }
+  });
+  const searchLabel = document.createElement('span');
+  searchLabel.textContent = 'Search';
+  search.append(createSearchIcon(), searchLabel);
+  const appLink = createLink('/app/', 'Open app', 'er-site-menu-cta');
+  if (appIsCurrent) appLink.setAttribute('aria-current', 'page');
+  navigation.append(search, appLink);
+  return navigation;
+}
+
 class EnergySiteHeader extends HTMLElement {
   connectedCallback() {
     if (this.hasChildNodes()) return;
 
     const appIsCurrent = window.location.pathname.startsWith('/app');
-    this.innerHTML = `
-      <header class="er-site-header">
-        <a class="er-site-brand" href="/" aria-label="Energy Replay home">
-          <img src="/logo.svg" alt="" width="40" height="40" />
-          <span class="er-site-brand-copy">Energy Replay<small>BY RUSSELL TECH</small></span>
-        </a>
-        <nav class="er-site-menu" aria-label="Main navigation">
-          <a href="/docs/guide/using-the-app.html">How it works</a>
-          <a href="/docs/guide/privacy-and-energy-data.html">Privacy</a>
-          <a href="/docs/about.html">About</a>
-          <a class="er-site-search" href="/docs/?search=1" aria-label="Search the handbook">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.7" cy="8.7" r="5.7"/><path d="m13 13 4 4"/></svg>
-            <span>Search</span>
-          </a>
-          <a class="er-site-menu-cta" href="/app/"${appIsCurrent ? ' aria-current="page"' : ''}>Open app</a>
-        </nav>
-      </header>`;
+    const header = document.createElement('header');
+    header.className = 'er-site-header';
+    header.append(createBrand(), createNavigation(appIsCurrent));
+    this.append(header);
   }
 }
 

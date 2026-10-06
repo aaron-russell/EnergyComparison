@@ -56,7 +56,7 @@ export function Shell({ step, navigate, reset, theme, toggleTheme, children, con
         </div>
       </aside>
       <div className="workspace">
-        <header className="topbar">
+        <section className="topbar" aria-label="Session status and controls">
           <span>
             <span className="status-dot" />
             {connected ? 'Provider connected · session only' : 'A fresh perspective on your energy'}
@@ -71,7 +71,7 @@ export function Shell({ step, navigate, reset, theme, toggleTheme, children, con
             </button>
             <button onClick={reset}>Clear session</button>
           </div>
-        </header>
+        </section>
         <main id="main" tabIndex={-1}>
           {children}
         </main>
