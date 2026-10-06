@@ -11,6 +11,12 @@ export default defineConfig({
     trace: 'off',
     screenshot: 'only-on-failure',
   },
+  expect: {
+    toHaveScreenshot: {
+      pathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
+      maxDiffPixelRatio: 0.02,
+    },
+  },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },

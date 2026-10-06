@@ -1,5 +1,6 @@
 import { BarChart3, Cable, Car, Download, Moon, ShieldCheck, Sun, Tags, Zap } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { SiteHeader } from './SiteHeader';
 const steps = [
   { label: 'Connect', icon: Cable },
   { label: 'Import usage', icon: Download },
@@ -23,17 +24,9 @@ export function Shell({ step, navigate, reset, theme, toggleTheme, children, con
       <a className="skip-link" href="#main">
         Skip to content
       </a>
+      <SiteHeader />
       <aside className="sidebar" aria-label="Replay navigation">
-        <a className="brand" href="#main">
-          <span className="brand-icon">
-            <Zap fill="currentColor" size={23} />
-          </span>
-          <span>
-            energy<span className="brand-light">replay</span>
-            <small>BY RUSSELL TECH</small>
-          </span>
-        </a>
-        <p className="nav-label">YOUR COMPARISON</p>
+        <p className="nav-label">REPLAY STEPS</p>
         <nav aria-label="Replay steps">
           {steps.map((item, index) => (
             <button

@@ -4,6 +4,7 @@ import { appSeo, buildJsonLd, canonicalUrl, jsonLdScript, SITE_ORIGIN } from '..
 describe('SEO metadata', () => {
   it('normalizes application and documentation canonical URLs', () => {
     expect(canonicalUrl('/')).toBe(`${SITE_ORIGIN}/`);
+    expect(canonicalUrl('/app/')).toBe(`${SITE_ORIGIN}/app/`);
     expect(canonicalUrl('/docs')).toBe(`${SITE_ORIGIN}/docs/`);
     expect(canonicalUrl('/docs/index.html')).toBe(`${SITE_ORIGIN}/docs/`);
     expect(canonicalUrl('/docs/guide/using-the-app.html')).toBe(
@@ -53,5 +54,16 @@ describe('SEO metadata', () => {
       'BreadcrumbList',
       'Article',
     ]);
+  });
+
+  it('points application structured data to the interactive app route', () => {
+    const graph = buildJsonLd({
+      title: 'Open the app',
+      description: 'Replay household usage against tariffs.',
+      path: '/app/',
+      includeApplication: true,
+    });
+    expect(graph['@graph'][0]).toMatchObject({ url: SITE_ORIGIN });
+    expect(graph['@graph'][1]).toMatchObject({ url: `${SITE_ORIGIN}/app/` });
   });
 });

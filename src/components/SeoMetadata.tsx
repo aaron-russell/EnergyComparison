@@ -35,7 +35,7 @@ function setLink(rel: string, href: string) {
 
 export function SeoMetadata({ step }: { step: AppStep }) {
   useEffect(() => {
-    const metadata = { ...appSeo[step], path: '/' };
+    const metadata = { ...appSeo[step], path: '/app/' };
     const url = canonicalUrl(metadata.path);
     document.title = metadata.title;
     setMeta('description', metadata.description);

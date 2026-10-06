@@ -8,11 +8,11 @@ test('renders the static skeleton before hydration and removes it after the firs
   const entryGate = new Promise<void>((resolve) => {
     releaseEntry = resolve;
   });
-  await page.route('**/assets/index-*.js', async (route) => {
+  await page.route('**/assets/app-*.js', async (route) => {
     await entryGate;
     await route.continue();
   });
-  const navigation = page.goto('/');
+  const navigation = page.goto('/app/');
   const skeleton = page.locator('#app-loading-skeleton');
   await expect(skeleton).toBeVisible();
   expect(await skeleton.evaluate((element) => getComputedStyle(element).position)).toBe('fixed');
@@ -23,7 +23,7 @@ test('renders the static skeleton before hydration and removes it after the firs
 });
 
 test('keeps the critical path strict and does not preload the social image', async ({ page }) => {
-  const response = await page.request.get('/');
+  const response = await page.request.get('/app/');
   const html = await response.text();
   const style = html.match(/<style id="critical-loading-style">([\s\S]*?)<\/style>/)?.[1];
   const hash = style ? `'sha256-${createHash('sha256').update(style).digest('base64')}'` : '';
@@ -37,7 +37,7 @@ test('keeps the critical path strict and does not preload the social image', asy
 });
 
 test('does not move the footer after the application becomes ready', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   const footer = page.locator('footer');
   const initialTop = await footer.evaluate((element) => element.getBoundingClientRect().top);
   await page.waitForTimeout(100);

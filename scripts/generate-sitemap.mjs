@@ -1,4 +1,4 @@
-import { readdir, stat, writeFile } from 'node:fs/promises';
+import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join, relative, sep } from 'node:path';
 
@@ -30,6 +30,22 @@ function escapeXml(value) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
+async function lastModified(path) {
+  if (!path.startsWith('/docs/')) return undefined;
+  const relativePath = path.slice('/docs/'.length).replace(/\.html$/, '.md') || 'index.md';
+  const sourcePath = join(fileURLToPath(new URL('../docs/', import.meta.url)), relativePath);
+  try {
+    const source = await readFile(sourcePath, 'utf8');
+    const frontmatter = source.match(/^---\n([\s\S]*?)\n---/);
+    const date = frontmatter?.[1].match(
+      /^(?:reviewed|dateModified):\s*['"]?(\d{4}-\d{2}-\d{2})['"]?\s*$/m,
+    )?.[1];
+    return date;
+  } catch {
+    return undefined;
+  }
+}
+
 const files = await htmlFiles(outputDirectory);
 const legacyDocumentationPaths = new Set([
   '/docs/adapters.html',
@@ -41,9 +57,14 @@ const paths = files
   .map(publicPath)
   .filter((path) => !legacyDocumentationPaths.has(path))
   .sort();
-const urls = paths
-  .map((path) => `  <url><loc>${escapeXml(`${siteOrigin}${path}`)}</loc></url>`)
-  .join('\n');
+const urls = (
+  await Promise.all(
+    paths.map(async (path) => {
+      const lastmod = await lastModified(path);
+      return `  <url><loc>${escapeXml(`${siteOrigin}${path}`)}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`;
+    }),
+  )
+).join('\n');
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 
 await writeFile(join(outputDirectory, 'sitemap.xml'), sitemap);

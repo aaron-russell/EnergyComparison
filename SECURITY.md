@@ -11,8 +11,9 @@ Transport uses fixed provider origins. Octopus pagination must retain the origin
 pathname, must progress and has a page limit. Cookies, API caching and redirects are disabled.
 Errors are sanitised: upstream error bodies and request URLs are never displayed or logged.
 
-`public/_headers` defines production CSP with no evaluated or inline scripts, no inline styles,
-fixed connection origins, no framing, and no object/embed content. Assets are self-hosted. AJV
+`public/_headers` defines production CSP with no evaluated scripts, no inline styles, and build-time
+hashes for static JSON-LD data blocks and documentation bootstrap scripts. It uses fixed connection
+origins, no framing, and no object/embed content. Assets are self-hosted. AJV
 standalone validators are generated before production builds; the browser never compiles schemas
 with `new Function`. No sensitive endpoint exists on Cloudflare. HTML is revalidated, fingerprinted
 assets are immutable for one year, and `/api/*` is explicitly `no-store` for future protection.

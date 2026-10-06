@@ -37,13 +37,17 @@ test('combined production build serves the app and handbook', async ({ page }) =
   expect(docsHeaders['permissions-policy']).toContain('camera=()');
   expect(docsHeaders['cross-origin-opener-policy']).toBe('same-origin');
   expect(docsHeaders['access-control-allow-origin']).toBeUndefined();
-  const appResponse = await page.request.get('/');
+  const landingResponse = await page.request.get('/');
+  const landingHtml = await landingResponse.text();
+  expect(landingHtml).toContain('Compare tariffs using the energy you actually used.');
+  expect(landingHtml).toContain('application/ld+json');
+  const appResponse = await page.request.get('/app/');
   const appHeaders = appResponse.headers();
   expect(appHeaders['content-security-policy']).not.toMatch(/script-src[^;]*'unsafe-inline'/);
   expect(appHeaders['cache-control']).toBe('public, max-age=0, must-revalidate');
   expect(appHeaders.etag).toBeTruthy();
   expect(appHeaders['access-control-allow-origin']).toBeUndefined();
-  const conditional = await page.request.get('/', {
+  const conditional = await page.request.get('/app/', {
     headers: { 'If-None-Match': appHeaders.etag },
   });
   expect(conditional.status()).toBe(304);
@@ -92,6 +96,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
   );
   const expectedSitemapUrls = [
     '/',
+    '/app/',
     '/docs/',
     '/docs/about.html',
     '/docs/architecture.html',
@@ -104,8 +109,10 @@ test('combined production build serves the app and handbook', async ({ page }) =
     '/docs/guide/coverage-and-estimates.html',
     '/docs/guide/development.html',
     '/docs/guide/ev-charging.html',
+    '/docs/guide/privacy-and-energy-data.html',
     '/docs/guide/tariffs-and-comparison.html',
     '/docs/guide/troubleshooting.html',
+    '/docs/guide/understanding-historical-comparisons.html',
     '/docs/guide/using-the-app.html',
     '/docs/operations/cloudflare-pages.html',
     '/docs/operations/cloudflare-workers.html',
@@ -119,6 +126,9 @@ test('combined production build serves the app and handbook', async ({ page }) =
     '/docs/versions.html',
   ].map((path) => new URL(path, 'https://energy.russell-tech.co.uk').href);
   expect(sitemapUrls).toEqual(expectedSitemapUrls);
+  expect(await sitemapResponse.text()).toContain(
+    '<loc>https://energy.russell-tech.co.uk/docs/guide/understanding-historical-comparisons.html</loc><lastmod>2026-10-05</lastmod>',
+  );
   expect(new Set(sitemapUrls ?? []).size).toBe(expectedSitemapUrls.length);
   for (const url of expectedSitemapUrls) {
     expect((await page.request.get(new URL(url).pathname)).status()).toBe(200);
@@ -136,6 +146,9 @@ test('combined production build serves the app and handbook', async ({ page }) =
   ]) {
     expect((await page.request.get(legacyPath)).status()).toBe(200);
   }
+  const appRedirect = await page.request.get('/app', { maxRedirects: 0 });
+  expect(appRedirect.status()).toBe(301);
+  expect(appRedirect.headers().location).toBe('/app/');
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
@@ -195,12 +208,12 @@ test('combined production build serves the app and handbook', async ({ page }) =
   expect(await nested.text()).toContain('Add an EV charger');
   const asset = await page.request.get('/docs/logo.svg');
   expect(asset.ok()).toBe(true);
-  await page.goto('/');
+  await page.goto('/app/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 });
 
 async function syntheticImport(page: Page) {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
@@ -219,7 +232,7 @@ async function compareSyntheticPeriod(
   incomplete = false,
   electricityOnly = false,
 ) {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
@@ -256,7 +269,7 @@ async function compareSyntheticPeriod(
 test('loads the complete demo workspace and renders the visual comparison dashboard', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Load complete demo' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(
@@ -284,7 +297,7 @@ test('manual replacement meters connect as one supply without account discovery'
     apiRequests.push(route.request().url());
     await route.abort();
   });
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByLabel('API key', { exact: true }).fill('synthetic-private-key');
   await page.getByLabel('Gas API unit (confirm before import)').selectOption('none');
   await page.getByText('Advanced connection options', { exact: true }).click();
@@ -439,7 +452,7 @@ test('labels complete and incomplete 12-month periods correctly', async ({ page 
 });
 
 test('manual baseline editing, duplication, validation and persistence', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Tariffs 05' }).click();
   await page.getByRole('button', { name: 'Add tariff', exact: true }).click();
   await page.getByLabel('Tariff name').fill('My current tariff');
@@ -465,7 +478,7 @@ test('manual baseline editing, duplication, validation and persistence', async (
 });
 
 test('restores tab progress after refresh without restoring credentials', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Load complete demo' }).click();
   await page.getByRole('button', { name: 'Replay these tariffs' }).click();
   await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
@@ -485,7 +498,7 @@ test('restores tab progress after refresh without restoring credentials', async 
 });
 
 test('accessibility, keyboard focus and responsive layouts in both themes', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByText('Skip to content')).toBeFocused();
@@ -512,7 +525,7 @@ test('accessibility, keyboard focus and responsive layouts in both themes', asyn
 test('credentials never enter storage and are cleared on reload under production CSP', async ({
   page,
 }) => {
-  const response = await page.goto('/');
+  const response = await page.goto('/app/');
   expect(response!.headers()['content-security-policy']).toContain("script-src 'self'");
   await page.getByLabel('API key', { exact: true }).fill('synthetic-private-key');
   await page.getByLabel('Account number', { exact: true }).fill('A-SYNTHETIC');

@@ -70,13 +70,21 @@ for (const file of files) {
   if (blocks.filter((block) => block.path.includes('pages.dev')).length !== 2) {
     failures.push(`${file}: preview noindex rules are incomplete`);
   }
-  if (file === 'dist/_headers' && existsSync('dist/index.html')) {
-    const html = readFileSync('dist/index.html', 'utf8');
+  if (file === 'dist/_headers' && existsSync('dist/app/index.html')) {
+    const html = readFileSync('dist/app/index.html', 'utf8');
     const style = html.match(/<style id="critical-loading-style">([\s\S]*?)<\/style>/)?.[1];
     const csp = value(common, 'Content-Security-Policy') ?? '';
     const hash = style ? `'sha256-${createHash('sha256').update(style).digest('base64')}'` : null;
     if (!hash || !csp.includes(hash)) {
       failures.push(`${file}: critical loading style hash is missing from the app CSP`);
+    }
+    const landing = readFileSync('dist/index.html', 'utf8');
+    const jsonLd = landing.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1];
+    const jsonLdHash = jsonLd
+      ? `'sha256-${createHash('sha256').update(jsonLd).digest('base64')}'`
+      : null;
+    if (!jsonLdHash || !(value(common, 'Content-Security-Policy') ?? '').includes(jsonLdHash)) {
+      failures.push(`${file}: landing-page JSON-LD hash is missing from the site CSP`);
     }
   }
 }

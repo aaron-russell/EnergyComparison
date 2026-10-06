@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Energy Replay">
+  <defs>
+    <linearGradient id="energy-replay-gradient" x1="3" y1="3" x2="29" y2="29" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ef9056"/>
+      <stop offset="0.58" stop-color="#c75582"/>
+      <stop offset="1" stop-color="#8554d0"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#energy-replay-gradient)"/>
+  <path d="M17.5 4 8 18h7l-1.5 10L24 14h-7z" fill="white"/>
+</svg>

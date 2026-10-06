@@ -4,7 +4,7 @@ A private React + TypeScript tool for replaying UK household consumption against
 energy tariffs. Built with Vite and npm for Cloudflare Pages, with an alternative Workers Static
 Assets configuration. Historical replay is **not a prediction or guarantee of future savings**.
 
-Live app: [energy.russell-tech.co.uk](https://energy.russell-tech.co.uk/) · [Documentation](https://energy.russell-tech.co.uk/docs/)
+Website: [energy.russell-tech.co.uk](https://energy.russell-tech.co.uk/) · [Open the app](https://energy.russell-tech.co.uk/app/) · [Documentation](https://energy.russell-tech.co.uk/docs/)
 
 ## What it does
 

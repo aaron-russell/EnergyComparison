@@ -12,7 +12,7 @@ hero:
       link: /guide/using-the-app
     - theme: alt
       text: Open Energy Replay
-      link: https://energy.russell-tech.co.uk/
+      link: https://energy.russell-tech.co.uk/app/
     - theme: alt
       text: Add an adapter
       link: /guide/adding-an-adapter
@@ -27,6 +27,11 @@ features:
     details: Find the contracts, normalized data shapes, calculations, deployment notes, and release gates.
     link: /reference/contracts
 ---
+
+## For households
+
+Start with the guide to [comparing historical energy costs](/guide/understanding-historical-comparisons),
+learn [how household energy data is handled](/guide/privacy-and-energy-data), or [open the app](https://energy.russell-tech.co.uk/app/).
 
 ## Documentation as code
 
@@ -44,7 +49,7 @@ are changing the code, read the [development workflow](/guide/development) befor
     <strong>Take the documented journey in the app.</strong>
     <p>Bring your usage and tariff definitions together in a private browser session.</p>
   </div>
-  <a class="docs-app-cta__link" href="/">Open Energy Replay <span aria-hidden="true">↗</span></a>
+  <a class="docs-app-cta__link" href="https://energy.russell-tech.co.uk/app/">Open Energy Replay <span aria-hidden="true">↗</span></a>
 </div>
 
 ## About this project
