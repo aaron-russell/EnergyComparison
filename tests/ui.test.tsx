@@ -26,6 +26,7 @@ import { syntheticEnergy } from '../src/adapters/synthetic';
 import { midnight } from '../src/core/time';
 import { replay } from '../src/core/engine';
 import type { Charging, Period, Reading, ReplayResult } from '../src/core/types';
+import type { Job } from '../src/core/jobs';
 import type { EnergyConnection } from '../src/adapters/contracts';
 import type { SessionData, SessionProps } from '../src/state/session';
 import { useSession } from '../src/state/use-session';
@@ -87,7 +88,7 @@ class TestWorker {
   constructor() {
     TestWorker.last = this;
   }
-  postMessage() {}
+  postMessage = vi.fn();
 }
 
 beforeEach(() => {
@@ -370,27 +371,57 @@ describe('page journeys', () => {
     const update = vi.fn();
     const pageData = data({ tariffs: [] });
     render(<TariffsPage data={pageData} update={update} next={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Load synthetic examples' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add tariff' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add sample tariffs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create a tariff' }));
     fireEvent.change(screen.getByLabelText('Tariff name'), { target: { value: 'New tariff' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply tariff' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save tariff to comparison' }));
     expect(update).toHaveBeenCalled();
   });
 
   it('covers tariff card actions and import errors', async () => {
     const update = vi.fn();
     render(<TariffsPage data={data()} update={update} next={vi.fn()} />);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Use as baseline' })[1]);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit rates' })[0]);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel edit' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Save' })[0]);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Duplicate' })[0]);
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel edit' }));
-    fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[1]);
-    const input = screen.getByLabelText('Import tariff JSON');
+    fireEvent.click(screen.getAllByRole('radio')[1]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit tariff details' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Save on this device' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Make a copy' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove tariff' })[1]);
+    const input = screen.getByLabelText('Add tariffs from a JSON file');
     fireEvent.change(input, { target: { files: [new File(['bad'], 'bad.json')] } });
     await waitFor(() => expect(screen.getByRole('alert')).toBeVisible());
     expect(update).toHaveBeenCalled();
+  });
+
+  it('searches tariffs and sorts by their replayed price for recorded usage', async () => {
+    const tariffs = structuredClone(exampleTariffs.slice(0, 2));
+    render(
+      <TariffsPage
+        data={data({ tariffs, supplies: [electricity], readings: [reading] })}
+        update={vi.fn()}
+        next={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search tariffs' }), {
+      target: { value: tariffs[0].name },
+    });
+    expect(screen.getByRole('heading', { name: tariffs[0].name })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: tariffs[1].name })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Search tariffs'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate price for my usage' }));
+    await waitFor(() => expect(TestWorker.last).not.toBeNull());
+    const job = TestWorker.last!.postMessage.mock.calls[0][0] as Job;
+    expect(job.kind).toBe('replay');
+    if (job.kind !== 'replay') throw new Error('Expected a replay job.');
+    const results = job.tariffs.map((tariff) =>
+      replay(tariff, job.readings, job.supplies, job.period, job.charging),
+    );
+    TestWorker.last!.onmessage?.({ data: { kind: 'replay', results } } as MessageEvent);
+    await waitFor(() => expect(screen.getByLabelText('Sort tariffs by')).toHaveValue('usage'));
+    expect(screen.queryByRole('button', { name: 'Calculate price for my usage' })).toBeNull();
+    expect(screen.getAllByText('Cost for recorded usage')).toHaveLength(2);
+    expect(screen.getByText(/missing intervals are excluded/)).toBeVisible();
   });
 
   it('shows compact prices for flat, multi-rate, gas-only and adjusted tariffs', () => {
@@ -457,7 +488,7 @@ describe('page journeys', () => {
     );
     render(<TariffsPage data={data({ tariffs: [] })} update={update} next={vi.fn()} />);
     fireEvent.change(screen.getByLabelText('Postcode'), { target: { value: 'L1 1AA' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Load tariffs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add tariffs to comparison' }));
     await waitFor(() =>
       expect(screen.getByText('Loaded 1 tariffs', { exact: false })).toBeVisible(),
     );
@@ -500,7 +531,7 @@ describe('page journeys', () => {
     );
     render(<TariffsPage data={data({ tariffs: [] })} update={update} next={next} />);
     fireEvent.change(screen.getByLabelText('Postcode'), { target: { value: 'L1 1AA' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Find cheapest for this usage' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Find cheapest and compare now' }));
     await waitFor(() => expect(next).toHaveBeenCalled());
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({ guidedCompare: true, tariffOffers: expect.any(Array) }),
@@ -509,20 +540,20 @@ describe('page journeys', () => {
 
   it('reports missing regions and empty Tariff Tracker catalogues', async () => {
     render(<TariffsPage data={data({ tariffs: [] })} update={vi.fn()} next={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Load tariffs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add tariffs to comparison' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Enter a postcode'));
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ rows: [] }))));
     fireEvent.change(screen.getByLabelText('Electricity region'), {
       target: { value: 'Yorkshire' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Load tariffs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add tariffs to comparison' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No open tariffs'));
   });
 
   it('renders compare controls and validation errors', () => {
     render(<ComparePage {...props({ tariffs: [exampleTariffs[0]], baselineId: '' })} />);
-    expect(screen.getByRole('button', { name: 'Replay these tariffs' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Compare using this usage' })).toBeDisabled();
   });
 
   it('runs a replay and renders results', async () => {
@@ -533,7 +564,7 @@ describe('page journeys', () => {
       period,
     ) as ReplayResult;
     render(<ComparePage {...props()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Replay these tariffs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare using this usage' }));
     await waitFor(() => expect(TestWorker.last).not.toBeNull());
     TestWorker.last!.onmessage?.({ data: { kind: 'replay', results: [result] } } as MessageEvent);
     await waitFor(() =>
@@ -543,14 +574,14 @@ describe('page journeys', () => {
 
   it('terminates an active replay worker when controls change', async () => {
     render(<ComparePage {...props()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Replay these tariffs' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare using this usage' }));
     await waitFor(() => expect(TestWorker.last).not.toBeNull());
     const worker = TestWorker.last!;
     fireEvent.change(screen.getByLabelText('Fuel comparison'), {
       target: { value: 'electricity' },
     });
     expect(worker.terminate).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Replay these tariffs' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Compare using this usage' })).toBeEnabled();
   });
 });
 
