@@ -135,9 +135,9 @@ describe('tariff and results UI', () => {
     fireEvent.change(screen.getByLabelText('Adjustment'), { target: { value: 'discount' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add time band' }));
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove band' }).at(-1)!);
-    fireEvent.click(screen.getByRole('button', { name: 'Apply tariff' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save tariff to comparison' }));
     expect(apply).toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
     expect(cancel).toHaveBeenCalled();
   });
 
@@ -146,7 +146,7 @@ describe('tariff and results UI', () => {
     const tariff = structuredClone(exampleTariffs[0]);
     render(<TariffEditor initial={tariff} apply={apply} cancel={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Add time band' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Apply tariff' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save tariff to comparison' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Electricity bands overlap');
     expect(apply).not.toHaveBeenCalled();
   });
