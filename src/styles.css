@@ -319,7 +319,7 @@ main {
 .field small {
   font-weight: 400;
 }
-input:not([type='checkbox']),
+input:not([type='checkbox']):not([type='radio']),
 select,
 textarea {
   width: 100%;
@@ -339,6 +339,12 @@ input[type='checkbox'] {
   accent-color: #b65588;
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
+}
+input[type='radio'] {
+  accent-color: #b65588;
+  width: 17px;
+  height: 17px;
   flex-shrink: 0;
 }
 input[type='file'] {
@@ -369,6 +375,22 @@ input::file-selector-button {
 .form-row > .field {
   flex: 1;
   min-width: 145px;
+}
+.tariff-current-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 43px;
+  padding: 0 12px;
+  border: 1px solid var(--selected-border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tariff-list-controls {
+  align-items: end;
 }
 fieldset {
   border: 1px solid var(--border);

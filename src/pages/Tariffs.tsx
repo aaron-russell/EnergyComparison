@@ -5,16 +5,18 @@ import type { Tariff } from '../core/types';
 import { blankTariff, jsonSource } from '../core/tariff';
 import { exampleTariffs } from '../fixtures/synthetic';
 import { deleteSavedTariff, exportTariffs, saveTariff } from '../state/tariff-storage';
-import type { SessionProps } from '../state/session';
+import type { SessionData, SessionProps } from '../state/session';
 import { TariffEditor } from '../components/TariffEditor';
 import { ErrorNotice, NextButton, PageHeading } from '../components/Shared';
 import { fetchTariffs, lookupRegion } from '../adapters/tarifftracker';
 import { useTariffLocation, useTariffUi } from '../state/use-session-ui';
+import { useJob } from '../state/use-job';
 
 export function TariffsPage({ data, update, next, ui, updateUi }: SessionProps) {
   const { draft, setDraft, postcode, region, changeLocation } = useTariffUi(ui, updateUi);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const usage = useTariffUsage(data);
   const merge = (tariffs: Tariff[]) =>
     update((current) => ({
       tariffs: [
@@ -23,9 +25,6 @@ export function TariffsPage({ data, update, next, ui, updateUi }: SessionProps) 
     }));
   const apply = (tariff: Tariff) => {
     merge([tariff]);
-    if (!data.baselineId) {
-      update({ baselineId: tariff.id });
-    }
     setDraft(null);
   };
   const save = (tariff: Tariff) => {
@@ -60,6 +59,7 @@ export function TariffsPage({ data, update, next, ui, updateUi }: SessionProps) 
         changeLocation={changeLocation}
       />
       <ErrorNotice message={error} />
+      <TariffSteps hasBaseline={!!data.baselineId} tariffCount={data.tariffs.length} />
       <p role="status">{message}</p>
       {draft && (
         <TariffEditor
@@ -70,9 +70,9 @@ export function TariffsPage({ data, update, next, ui, updateUi }: SessionProps) 
           changeDraft={setDraft}
         />
       )}
-      <TariffCards
-        tariffs={data.tariffs}
-        baselineId={data.baselineId}
+      <TariffComparisonList
+        data={data}
+        usage={usage}
         choose={(baselineId) => update({ baselineId })}
         edit={(tariff) => setDraft(structuredClone(tariff))}
         save={save}
@@ -84,12 +84,273 @@ export function TariffsPage({ data, update, next, ui, updateUi }: SessionProps) 
           })
         }
         remove={remove}
+        next={next}
       />
+    </>
+  );
+}
+
+type TariffUsage = {
+  costs: Record<string, string>;
+  calculate: () => boolean;
+  busy: boolean;
+  error: string;
+};
+
+function TariffComparisonList({
+  data,
+  usage,
+  choose,
+  edit,
+  save,
+  duplicate,
+  remove,
+  next,
+}: {
+  data: SessionData;
+  usage: TariffUsage;
+  choose: (id: string) => void;
+  edit: (tariff: Tariff) => void;
+  save: (tariff: Tariff) => void;
+  duplicate: (tariff: Tariff) => void;
+  remove: (tariff: Tariff) => void;
+  next: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('name');
+  return (
+    <>
+      <TariffListControls
+        search={search}
+        sort={sort}
+        changeSearch={setSearch}
+        changeSort={setSort}
+        calculateUsageCosts={() => {
+          const started = usage.calculate();
+          if (started) {
+            setSort('usage');
+          }
+          return started;
+        }}
+        hasUsageCosts={Object.keys(usage.costs).length > 0}
+        calculating={usage.busy}
+      />
+      <ErrorNotice message={usage.error} />
+      <p className="muted">
+        Usage prices include standing charges and tariff credits for this period. They use recorded
+        readings; missing intervals are excluded.
+      </p>
+      <TariffCards
+        tariffs={sortTariffs(data.tariffs, search, sort, usage.costs)}
+        usageCosts={usage.costs}
+        baselineId={data.baselineId}
+        choose={choose}
+        edit={edit}
+        save={save}
+        duplicate={duplicate}
+        remove={remove}
+      />
+      {data.tariffs.length > 0 &&
+        !data.tariffs.some((tariff) =>
+          tariff.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
+        ) && <p className="muted">No tariffs match. Try another name or clear the search.</p>}
+      {(data.tariffs.length < 2 || !data.baselineId) && (
+        <p className="muted">
+          {!data.baselineId
+            ? 'Choose your current tariff and add at least one alternative to continue.'
+            : 'Add at least one alternative tariff to continue.'}
+        </p>
+      )}
       <NextButton onClick={next} disabled={data.tariffs.length < 2 || !data.baselineId}>
-        Compare tariffs
+        Continue to comparison
       </NextButton>
     </>
   );
+}
+
+function useTariffUsage(data: SessionData): TariffUsage {
+  const job = useJob();
+  const [requestError, setRequestError] = useState('');
+  const [result, setResult] = useState<{
+    tariffs: Tariff[];
+    readings: SessionData['readings'];
+    supplies: SessionData['supplies'];
+    period: SessionData['period'];
+    charging: SessionData['charging'];
+    costs: Record<string, string>;
+  } | null>(null);
+  const costs =
+    result?.tariffs === data.tariffs &&
+    result.readings === data.readings &&
+    result.supplies === data.supplies &&
+    result.period === data.period &&
+    result.charging === data.charging
+      ? result.costs
+      : {};
+  const calculate = () => {
+    const tariffs = compatibleTariffs(data);
+    if (!data.readings.length || tariffs.length < 2) {
+      setRequestError('Add observed usage and at least two tariffs priced for the same supplies.');
+      return false;
+    }
+    setRequestError('');
+    job.run(
+      {
+        kind: 'replay',
+        readings: data.readings,
+        supplies: data.supplies,
+        period: data.period,
+        charging: data.charging,
+        tariffs,
+      },
+      (output) => {
+        if (output.kind === 'replay') {
+          setResult({
+            tariffs: data.tariffs,
+            readings: data.readings,
+            supplies: data.supplies,
+            period: data.period,
+            charging: data.charging,
+            costs: Object.fromEntries(
+              output.results.map(({ tariffId, total }) => [tariffId, total]),
+            ),
+          });
+        }
+      },
+    );
+    return true;
+  };
+  return { costs, calculate, busy: job.busy, error: job.error || requestError };
+}
+
+function compatibleTariffs(data: SessionData) {
+  return data.tariffs.filter(
+    (tariff) => data.supplies.length > 0 && data.supplies.every((supply) => tariff[supply.fuel]),
+  );
+}
+
+function TariffSteps({ hasBaseline, tariffCount }: { hasBaseline: boolean; tariffCount: number }) {
+  return (
+    <section className="panel" aria-label="How to compare tariffs">
+      <strong>Compare your tariffs in three steps</strong>
+      <ol>
+        <li>
+          {hasBaseline ? 'Current tariff selected.' : 'Choose the tariff you are on now below.'}
+        </li>
+        <li>
+          {tariffCount > 1
+            ? 'Add or keep at least one alternative tariff.'
+            : 'Add an alternative tariff.'}
+        </li>
+        <li>Continue, then choose “Compare using this usage” to see each tariff priced.</li>
+      </ol>
+    </section>
+  );
+}
+
+function TariffListControls({
+  search,
+  sort,
+  changeSearch,
+  changeSort,
+  calculateUsageCosts,
+  hasUsageCosts,
+  calculating,
+}: {
+  search: string;
+  sort: string;
+  changeSearch: (value: string) => void;
+  changeSort: (value: string) => void;
+  calculateUsageCosts: () => boolean;
+  hasUsageCosts: boolean;
+  calculating: boolean;
+}) {
+  return (
+    <div className="form-row tariff-list-controls">
+      <label className="field">
+        Search tariffs
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => changeSearch(event.target.value)}
+          placeholder="Search by tariff name"
+        />
+      </label>
+      <label className="field">
+        Sort tariffs by
+        <select value={sort} onChange={(event) => changeSort(event.target.value)}>
+          <option value="name">Name (A to Z)</option>
+          <option value="electricity">Electricity unit price (lowest rate)</option>
+          <option value="gas">Gas unit price</option>
+          <option value="renewable">Renewable status</option>
+          <option value="usage" disabled={!hasUsageCosts}>
+            Price for your recorded usage
+          </option>
+        </select>
+      </label>
+      {!hasUsageCosts && (
+        <button type="button" onClick={calculateUsageCosts} disabled={calculating}>
+          {calculating ? 'Calculating…' : 'Calculate price for my usage'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function sortTariffs(
+  tariffs: Tariff[],
+  search: string,
+  sort: string,
+  usageCosts: Record<string, string>,
+) {
+  const query = search.trim().toLocaleLowerCase();
+  return tariffs
+    .filter((tariff) => tariff.name.toLocaleLowerCase().includes(query))
+    .sort((left, right) => compareTariffs(left, right, sort, usageCosts));
+}
+
+function compareTariffs(
+  left: Tariff,
+  right: Tariff,
+  sort: string,
+  usageCosts: Record<string, string>,
+) {
+  if (sort === 'electricity') {
+    return compareRates(lowestElectricityRate(left), lowestElectricityRate(right));
+  }
+  if (sort === 'gas') {
+    return compareRates(left.gas?.rate, right.gas?.rate);
+  }
+  if (sort === 'renewable') {
+    return left.renewable.localeCompare(right.renewable) || compareNames(left, right);
+  }
+  if (sort === 'usage') {
+    return compareRates(usageCosts[left.id], usageCosts[right.id]) || compareNames(left, right);
+  }
+  return compareNames(left, right);
+}
+
+function lowestElectricityRate(tariff: Tariff): string | undefined {
+  return tariff.electricity?.bands
+    .reduce(
+      (lowest, band) => (new Decimal(band.rate).lessThan(lowest) ? new Decimal(band.rate) : lowest),
+      new Decimal(tariff.electricity.bands[0].rate),
+    )
+    .toString();
+}
+
+function compareRates(left?: string, right?: string): number {
+  if (!left) {
+    return right ? 1 : 0;
+  }
+  if (!right) {
+    return -1;
+  }
+  return new Decimal(left).comparedTo(right);
+}
+
+function compareNames(left: Tariff, right: Tariff): number {
+  return left.name.localeCompare(right.name);
 }
 
 function TariffsHeading() {
@@ -103,6 +364,7 @@ function TariffsHeading() {
 
 function TariffCards({
   tariffs,
+  usageCosts,
   baselineId,
   choose,
   edit,
@@ -111,6 +373,7 @@ function TariffCards({
   remove,
 }: {
   tariffs: Tariff[];
+  usageCosts: Record<string, string>;
   baselineId: string;
   choose: (id: string) => void;
   edit: (tariff: Tariff) => void;
@@ -124,6 +387,7 @@ function TariffCards({
         <TariffCard
           key={tariff.id}
           tariff={tariff}
+          usageCost={usageCosts[tariff.id]}
           baseline={tariff.id === baselineId}
           choose={() => choose(tariff.id)}
           edit={() => edit(tariff)}
@@ -163,13 +427,16 @@ function TariffToolbar({
       <div className="actions">
         <button className="primary" onClick={add}>
           <Plus size={17} />
-          Add tariff
+          Create a tariff
         </button>
-        <button onClick={examples}>Load synthetic examples</button>
-        <button onClick={exportAll}>Export tariffs only</button>
+        <button onClick={examples}>Add sample tariffs</button>
+        <button onClick={exportAll}>Download tariff definitions</button>
       </div>
+      <p className="muted">
+        Create a tariff yourself, add sample rates, or move tariff definitions in and out as JSON.
+      </p>
       <label className="field">
-        Import tariff JSON
+        Add tariffs from a JSON file
         <input
           type="file"
           accept=".json"
@@ -191,8 +458,8 @@ function TariffToolbar({
         changeLocation={changeLocation}
       />
       <p className="muted">
-        Saving is explicit. Progress and unsaved definitions stay in this tab through refresh;
-        export includes tariff definitions only.
+        Your current comparison stays in this tab through refresh. Downloaded files contain tariff
+        definitions only.
       </p>
     </div>
   );
@@ -350,10 +617,10 @@ function TariffTrackerFields({
         />
       </label>
       <button type="button" onClick={() => void load()} disabled={loading}>
-        {loading ? 'Loading…' : 'Load tariffs'}
+        {loading ? 'Loading…' : 'Add tariffs to comparison'}
       </button>
       <button type="button" className="primary" onClick={() => void load(true)} disabled={loading}>
-        {loading ? 'Loading…' : 'Find cheapest for this usage'}
+        {loading ? 'Loading…' : 'Find cheapest and compare now'}
       </button>
     </div>
   );
@@ -409,6 +676,7 @@ async function requestTariffs(postcode: string, region: string, signal: AbortSig
 }
 function TariffCard({
   tariff,
+  usageCost,
   baseline,
   choose,
   edit,
@@ -417,6 +685,7 @@ function TariffCard({
   remove,
 }: {
   tariff: Tariff;
+  usageCost?: string;
   baseline: boolean;
   choose: () => void;
   edit: () => void;
@@ -426,28 +695,43 @@ function TariffCard({
 }) {
   return (
     <article className={`panel tariff-card ${baseline ? 'selected' : ''}`}>
-      <span className="badge">{baseline ? 'CURRENT BASELINE' : 'ALTERNATIVE'}</span>
+      <span className="badge">{baseline ? 'CURRENT TARIFF' : 'ALTERNATIVE TARIFF'}</span>
       <h2>{tariff.name}</h2>
       <p>Renewable: {tariff.renewable}</p>
       <TariffPriceSummary tariff={tariff} />
+      {usageCost !== undefined && (
+        <dl className="tariff-prices">
+          <PriceSummaryRow label="Cost for recorded usage" value={pounds(usageCost)} />
+        </dl>
+      )}
+      <p className="muted">Choose the tariff you currently pay for</p>
       <div className="actions">
-        <button onClick={edit}>Edit rates</button>
-        <button onClick={choose} disabled={baseline}>
-          Use as baseline
-        </button>
+        <button onClick={edit}>Edit tariff details</button>
+        <label className="tariff-current-choice">
+          <input
+            type="radio"
+            name="current-tariff"
+            value={tariff.id}
+            checked={baseline}
+            onChange={choose}
+            aria-label={`I am on ${tariff.name}`}
+          />
+          I’m on this tariff
+        </label>
       </div>
+      <p className="muted">Tariff list actions</p>
       <div className="actions">
         <button onClick={save}>
           <Save size={15} />
-          Save
+          Save on this device
         </button>
         <button onClick={duplicate}>
           <Copy size={15} />
-          Duplicate
+          Make a copy
         </button>
         <button onClick={remove}>
           <Trash2 size={15} />
-          Delete
+          Remove tariff
         </button>
       </div>
     </article>

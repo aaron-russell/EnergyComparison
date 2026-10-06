@@ -30,7 +30,7 @@ export function TariffEditor({
   };
   return (
     <section className="panel">
-      <h2>Edit tariff</h2>
+      <h2>Add or edit a tariff</h2>
       <p>
         All prices include VAT. Enter decimal pence, not pounds. Negative unit prices are supported.
       </p>
@@ -51,10 +51,10 @@ export function TariffEditor({
         <ErrorNotice message={error} />
         <div className="actions">
           <button className="primary" type="submit">
-            Apply tariff
+            Save tariff to comparison
           </button>
           <button type="button" onClick={cancel}>
-            Cancel edit
+            Discard changes
           </button>
         </div>
       </form>
