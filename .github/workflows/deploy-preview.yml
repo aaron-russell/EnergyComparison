@@ -87,7 +87,7 @@ jobs:
             });
             const existing = comments.find(
               (comment) =>
-                comment.user?.login === 'github-actions[bot]' &&
+                ['github-actions[bot]', 'github-actions'].includes(comment.user?.login) &&
                 comment.body?.includes(marker),
             );
 
