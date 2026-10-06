@@ -220,13 +220,13 @@ async function finishComparison(
     await page.getByRole('button', { name: 'Review optional EV charging' }).click();
   }
   await page.getByRole('button', { name: 'Continue to tariffs' }).click();
-  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
-  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
-  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
+  await page.getByRole('button', { name: 'Add sample tariffs' }).click();
+  await page.getByRole('radio').first().click();
+  await page.getByRole('button', { name: 'Continue to comparison', exact: true }).click();
   if (options.electricityOnly) {
     await page.getByLabel('Fuel comparison').selectOption('electricity');
   }
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await page.getByRole('button', { name: 'Compare using this usage' }).click();
   await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
     timeout: 30000,
   });
@@ -353,7 +353,7 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   await page.getByRole('radio').first().click();
   await page.getByRole('button', { name: 'Save on this device', exact: true }).first().click();
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export tariffs only' }).click();
+  await page.getByRole('button', { name: 'Download tariff definitions' }).click();
   const stream = await (await download).createReadStream();
   const chunks = [];
   for await (const chunk of stream!) {
@@ -675,7 +675,11 @@ test('manual baseline editing, duplication, validation and persistence', async (
   await page.getByRole('button', { name: 'Tariffs 05' }).click();
   await expect(page.getByRole('heading', { name: 'My current tariff' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Alternative', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Remove tariff', exact: true }).first().click();
+  await page
+    .locator('.tariff-card')
+    .filter({ has: page.getByRole('heading', { name: 'My current tariff' }) })
+    .getByRole('button', { name: 'Remove tariff', exact: true })
+    .click();
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('energy-replay:saved-tariffs')!)),
   ).toEqual([]);
