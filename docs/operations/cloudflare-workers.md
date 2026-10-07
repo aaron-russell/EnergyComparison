@@ -9,5 +9,6 @@ The repository also contains `wrangler.workers.jsonc` for serving the built `dis
 Static Assets. Build with `npm run build`, then use the Workers configuration when the deployment target
 needs a Worker instead of Pages.
 
-This alternative does not change adapter or calculation behavior. Verify both `/` and `/docs/`, preserve
-the static asset headers, and run the same synthetic and hosted checks before release.
+This alternative does not change adapter or calculation behavior. Verify the landing page at `/`, the
+application at `/app/`, and the handbook at `/docs/`. Preserve the static asset headers and run the same
+synthetic and hosted checks before release.

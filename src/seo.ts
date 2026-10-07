@@ -91,7 +91,7 @@ export function buildJsonLd(metadata: SeoMetadata) {
       '@type': 'SoftwareApplication',
       '@id': `${SITE_ORIGIN}/#software`,
       name: 'Energy Replay',
-      url: SITE_ORIGIN,
+      url: `${SITE_ORIGIN}/app/`,
       description: metadata.description,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Web',

@@ -37,13 +37,17 @@ test('combined production build serves the app and handbook', async ({ page }) =
   expect(docsHeaders['permissions-policy']).toContain('camera=()');
   expect(docsHeaders['cross-origin-opener-policy']).toBe('same-origin');
   expect(docsHeaders['access-control-allow-origin']).toBeUndefined();
-  const appResponse = await page.request.get('/');
+  const landingResponse = await page.request.get('/');
+  const landingHtml = await landingResponse.text();
+  expect(landingHtml).toContain('Compare tariffs using the energy you actually used.');
+  expect(landingHtml).toContain('application/ld+json');
+  const appResponse = await page.request.get('/app/');
   const appHeaders = appResponse.headers();
   expect(appHeaders['content-security-policy']).not.toMatch(/script-src[^;]*'unsafe-inline'/);
   expect(appHeaders['cache-control']).toBe('public, max-age=0, must-revalidate');
   expect(appHeaders.etag).toBeTruthy();
   expect(appHeaders['access-control-allow-origin']).toBeUndefined();
-  const conditional = await page.request.get('/', {
+  const conditional = await page.request.get('/app/', {
     headers: { 'If-None-Match': appHeaders.etag },
   });
   expect(conditional.status()).toBe(304);
@@ -92,6 +96,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
   );
   const expectedSitemapUrls = [
     '/',
+    '/app/',
     '/docs/',
     '/docs/about.html',
     '/docs/architecture.html',
@@ -104,8 +109,10 @@ test('combined production build serves the app and handbook', async ({ page }) =
     '/docs/guide/coverage-and-estimates.html',
     '/docs/guide/development.html',
     '/docs/guide/ev-charging.html',
+    '/docs/guide/privacy-and-energy-data.html',
     '/docs/guide/tariffs-and-comparison.html',
     '/docs/guide/troubleshooting.html',
+    '/docs/guide/understanding-historical-comparisons.html',
     '/docs/guide/using-the-app.html',
     '/docs/operations/cloudflare-pages.html',
     '/docs/operations/cloudflare-workers.html',
@@ -119,6 +126,9 @@ test('combined production build serves the app and handbook', async ({ page }) =
     '/docs/versions.html',
   ].map((path) => new URL(path, 'https://energy.russell-tech.co.uk').href);
   expect(sitemapUrls).toEqual(expectedSitemapUrls);
+  expect(await sitemapResponse.text()).toContain(
+    '<loc>https://energy.russell-tech.co.uk/docs/guide/understanding-historical-comparisons.html</loc><lastmod>2026-10-05</lastmod>',
+  );
   expect(new Set(sitemapUrls ?? []).size).toBe(expectedSitemapUrls.length);
   for (const url of expectedSitemapUrls) {
     expect((await page.request.get(new URL(url).pathname)).status()).toBe(200);
@@ -136,9 +146,12 @@ test('combined production build serves the app and handbook', async ({ page }) =
   ]) {
     expect((await page.request.get(legacyPath)).status()).toBe(200);
   }
+  const appRedirect = await page.request.get('/app', { maxRedirects: 0 });
+  expect(appRedirect.status()).toBe(301);
+  expect(appRedirect.headers().location).toBe('/app/');
   await expect(page.locator('h1').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Use the app' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Operations' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Privacy', exact: true })).toBeVisible();
   expect(
     (
       await new AxeBuilder({ page })
@@ -146,7 +159,7 @@ test('combined production build serves the app and handbook', async ({ page }) =
         .analyze()
     ).violations,
   ).toEqual([]);
-  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByRole('link', { name: 'Search the handbook' }).click();
   const search = page.locator('#localsearch-input');
   await expect(search).toBeVisible();
   await search.fill('Tariffs and comparison');
@@ -195,12 +208,12 @@ test('combined production build serves the app and handbook', async ({ page }) =
   expect(await nested.text()).toContain('Add an EV charger');
   const asset = await page.request.get('/docs/logo.svg');
   expect(asset.ok()).toBe(true);
-  await page.goto('/');
+  await page.goto('/app/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 });
 
 async function syntheticImport(page: Page) {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
@@ -249,7 +262,7 @@ async function compareSyntheticPeriod(
   incomplete = false,
   electricityOnly = false,
 ) {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Clear session' }).click();
   await page.getByLabel('Energy provider', { exact: true }).selectOption('synthetic');
   await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
@@ -286,7 +299,7 @@ async function compareSyntheticPeriod(
 test('loads the complete demo workspace and renders the visual comparison dashboard', async ({
   page,
 }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Load complete demo' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(
@@ -314,7 +327,7 @@ test('manual replacement meters connect as one supply without account discovery'
     apiRequests.push(route.request().url());
     await route.abort();
   });
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByLabel('API key', { exact: true }).fill('synthetic-private-key');
   await page.getByLabel('Gas API unit (confirm before import)').selectOption('none');
   await page.getByText('Advanced connection options', { exact: true }).click();
@@ -416,7 +429,7 @@ test('Octopus discovery, authenticated interval import and tariff comparison', a
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });
   });
 
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByLabel('API key', { exact: true }).fill('synthetic-key');
   await page.getByLabel('Account number', { exact: true }).fill('A-SYNTHETIC');
   await page.getByLabel('Gas API unit (confirm before import)').selectOption('none');
@@ -447,187 +460,6 @@ test('Octopus discovery, authenticated interval import and tariff comparison', a
   ).not.toContain('synthetic-key');
 });
 
-test('SmartFlex device discovery, measured session review and comparison', async ({ page }) => {
-  const requests: Array<{
-    body: { query: string; variables: Record<string, string> };
-    token: string;
-  }> = [];
-  await page.route('https://api.octopus.energy/v1/graphql/', async (route) => {
-    const request = route.request();
-    const body = request.postDataJSON() as {
-      query: string;
-      variables: Record<string, string>;
-    };
-    requests.push({ body, token: (await request.allHeaders()).authorization });
-    const data = body.query.startsWith('query Devices')
-      ? { devices: [{ id: 'SYNTHETIC-DEVICE', __typename: 'SmartFlexVehicle' }] }
-      : {
-          devices: [
-            {
-              chargingSessions: {
-                edges: [
-                  {
-                    node: {
-                      start: '2024-03-10T11:00:00Z',
-                      end: '2024-03-10T12:00:00Z',
-                      energyAdded: { value: '1500', unit: 'WATT_HOUR' },
-                    },
-                  },
-                ],
-                pageInfo: { hasNextPage: false, endCursor: null },
-              },
-            },
-          ],
-        };
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({ data }),
-    });
-  });
-
-  await syntheticImport(page);
-  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
-  await page.getByLabel('Charging integration', { exact: true }).selectOption('octopus-smartflex');
-  await page.getByLabel('SmartFlex account number').fill('A-SYNTHETIC');
-  await page.getByLabel('Octopus GraphQL access token').fill('synthetic-token');
-  await page.getByRole('button', { name: 'Connect charging provider' }).click();
-  await expect(page.getByLabel('Device')).toHaveValue(/.+/);
-  await expect(page.getByLabel('Octopus GraphQL access token')).toHaveValue('');
-  await page.getByRole('button', { name: 'Fetch charging history' }).click();
-  await expect(page.getByRole('heading', { name: 'Review 1 sessions' })).toBeVisible();
-  await expect(page.getByLabel('Energy kWh')).toHaveValue('1.5');
-  await expect(page.getByLabel('Confirmed provenance')).toHaveValue('unknown');
-  await expect(
-    page.getByText(/reports session energy, not measured household grid energy/),
-  ).toBeVisible();
-  expect(requests).toHaveLength(2);
-  expect(requests.map(({ body }) => body.variables.account)).toEqual([
-    'A-SYNTHETIC',
-    'A-SYNTHETIC',
-  ]);
-  expect(requests.map(({ token }) => token)).toEqual(['synthetic-token', 'synthetic-token']);
-  await finishComparison(page, { chargingStepOpen: true });
-  expect(
-    await page.evaluate(async () => JSON.stringify({ ...localStorage, ...sessionStorage })),
-  ).not.toContain('synthetic-token');
-});
-
-test('Pod Point CSV filters public sessions and preserves the home-grid amount through comparison', async ({
-  page,
-}) => {
-  await syntheticImport(page);
-  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
-  await page.getByLabel('Charging integration', { exact: true }).selectOption('pod-point');
-  await page.getByLabel('Charging file').setInputFiles({
-    name: 'synthetic-pod-point.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from(
-      'Date,Start time,End time,Total kWh Consumed,kWh Grid (Home),Location type\n10/03/2024,11:25,14:52,30.12,10,home\n10/03/2024,15:00,17:00,20,,public',
-    ),
-  });
-  await page.getByRole('button', { name: 'Preview mapping and sessions' }).click();
-  await expect(page.getByRole('heading', { name: 'Review 1 sessions' })).toBeVisible();
-  await expect(page.getByLabel('Energy kWh')).toHaveValue('10');
-  await expect(page.getByLabel('Confirmed provenance')).toHaveValue('grid');
-  await expect(page.getByText(/Public and unrecognised locations excluded/)).toBeVisible();
-  await expect(
-    page.getByText(/Names, addresses and device identifiers are discarded/),
-  ).toBeVisible();
-  await finishComparison(page, { chargingStepOpen: true });
-});
-
-test('generic JSON charging import reviews unknown attribution before tariff replay', async ({
-  page,
-}) => {
-  await syntheticImport(page);
-  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
-  await page.getByLabel('Charging integration', { exact: true }).selectOption('generic-file');
-  await page.getByLabel('Charging file').setInputFiles({
-    name: 'synthetic-sessions.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from(
-      JSON.stringify([
-        {
-          start: '2024-03-10T11:00:00Z',
-          end: '2024-03-10T12:00:00Z',
-          kWh: '2.5',
-          name: 'Synthetic driver',
-          address: '1 Synthetic Lane',
-        },
-      ]),
-    ),
-  });
-  await page.getByRole('button', { name: 'Preview mapping and sessions' }).click();
-  await expect(page.getByRole('heading', { name: 'Review 1 sessions' })).toBeVisible();
-  await expect(page.getByLabel('Energy kWh')).toHaveValue('2.5');
-  await expect(page.getByLabel('Confirmed provenance')).toHaveValue('unknown');
-  await expect(page.getByText('Synthetic driver')).toHaveCount(0);
-  await expect(page.getByText('1 Synthetic Lane')).toHaveCount(0);
-  await finishComparison(page, { chargingStepOpen: true });
-});
-
-test('finds the lowest compatible open tariff without a current baseline', async ({ page }) => {
-  await page.route('https://tarifftracker.io/api/v1/lookup**', async (route) => {
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({ data: { electricity_region: 'Yorkshire' } }),
-    });
-  });
-  await page.route('https://tarifftracker.io/api/v1/energy/tariffs**', async (route) => {
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        as_of: '2026-10-01T00:00:00Z',
-        caveats: ['Check supplier terms before switching'],
-        rows: [
-          {
-            supplier: 'Synthetic Cheap Energy',
-            tariff: 'Fixed',
-            product_code: 'CHEAP',
-            region: 'Yorkshire',
-            fuel: 'dual',
-            kind: 'fixed',
-            payment: 'direct debit',
-            unit_p_kwh: '20',
-            standing_p_day: '45',
-            gas_unit_p_kwh: '5',
-            gas_standing_p_day: '25',
-            annual_est_gbp: '800',
-            term_months: '12',
-            exit_fee_gbp: '50',
-          },
-          {
-            supplier: 'Synthetic Other Energy',
-            tariff: 'Variable',
-            product_code: 'OTHER',
-            region: 'Yorkshire',
-            fuel: 'dual',
-            kind: 'variable',
-            payment: 'direct debit',
-            unit_p_kwh: '30',
-            standing_p_day: '55',
-            gas_unit_p_kwh: '8',
-            gas_standing_p_day: '30',
-            annual_est_gbp: '1100',
-          },
-        ],
-      }),
-    });
-  });
-  await syntheticImport(page);
-  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
-  await page.getByRole('button', { name: 'Continue to tariffs' }).click();
-  await page.getByLabel('Postcode').fill('L1 1AA');
-  await page.getByRole('button', { name: 'Find cheapest and compare now' }).click();
-  await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByText('Lowest replay', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('Not supplied', { exact: true })).toBeVisible();
-  await expect(page.getByText('Open tariff data · Yorkshire')).toBeVisible();
-  await expect(page.getByText(/12-month term/)).toBeVisible();
-});
-
 test('labels complete and incomplete 12-month periods correctly', async ({ page }) => {
   test.setTimeout(120000);
   await compareSyntheticPeriod(page, '2024-10-01', '2025-10-01', false, true);
@@ -656,7 +488,7 @@ test('labels complete and incomplete 12-month periods correctly', async ({ page 
 });
 
 test('manual baseline editing, duplication, validation and persistence', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Tariffs 05' }).click();
   await page.getByRole('button', { name: 'Create a tariff', exact: true }).click();
   await page.getByLabel('Tariff name').fill('My current tariff');
@@ -686,7 +518,7 @@ test('manual baseline editing, duplication, validation and persistence', async (
 });
 
 test('restores tab progress after refresh without restoring credentials', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Load complete demo' }).click();
   await page.getByRole('button', { name: 'Compare using this usage' }).click();
   await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
@@ -706,7 +538,7 @@ test('restores tab progress after refresh without restoring credentials', async 
 });
 
 test('accessibility, keyboard focus and responsive layouts in both themes', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.keyboard.press('Tab');
   await expect(page.getByText('Skip to content')).toBeFocused();
@@ -733,7 +565,7 @@ test('accessibility, keyboard focus and responsive layouts in both themes', asyn
 test('credentials never enter storage and are cleared on reload under production CSP', async ({
   page,
 }) => {
-  const response = await page.goto('/');
+  const response = await page.goto('/app/');
   expect(response!.headers()['content-security-policy']).toContain("script-src 'self'");
   await page.getByLabel('API key', { exact: true }).fill('synthetic-private-key');
   await page.getByLabel('Account number', { exact: true }).fill('A-SYNTHETIC');

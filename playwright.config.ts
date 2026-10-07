@@ -12,6 +12,13 @@ export default defineConfig({
     trace: 'off',
     screenshot: 'only-on-failure',
   },
+  expect: {
+    toHaveScreenshot: {
+      pathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}',
+      // macOS baselines render slightly differently from the Ubuntu CI runner.
+      maxDiffPixelRatio: 0.06,
+    },
+  },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },

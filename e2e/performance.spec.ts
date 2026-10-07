@@ -8,11 +8,11 @@ test('renders the static skeleton before hydration and removes it after the firs
   const entryGate = new Promise<void>((resolve) => {
     releaseEntry = resolve;
   });
-  await page.route('**/assets/index-*.js', async (route) => {
+  await page.route('**/assets/app-*.js', async (route) => {
     await entryGate;
     await route.continue();
   });
-  const navigation = page.goto('/');
+  const navigation = page.goto('/app/');
   const skeleton = page.locator('#app-loading-skeleton');
   await expect(skeleton).toBeVisible();
   expect(await skeleton.evaluate((element) => getComputedStyle(element).position)).toBe('fixed');
@@ -23,7 +23,7 @@ test('renders the static skeleton before hydration and removes it after the firs
 });
 
 test('keeps the critical path strict and does not preload the social image', async ({ page }) => {
-  const response = await page.request.get('/');
+  const response = await page.request.get('/app/');
   const html = await response.text();
   const style = html.match(/<style id="critical-loading-style">([\s\S]*?)<\/style>/)?.[1];
   const hash = style ? `'sha256-${createHash('sha256').update(style).digest('base64')}'` : '';
@@ -42,7 +42,7 @@ test('loads only the Cloudflare Web Analytics beacon after the page load', async
   await page.route('https://static.cloudflareinsights.com/beacon.min.js', (route) =>
     route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }),
   );
-  await page.goto('/');
+  await page.goto('/app/');
   await expect(page.locator('script[data-cf-beacon]')).toHaveAttribute(
     'src',
     'https://static.cloudflareinsights.com/beacon.min.js',
@@ -60,14 +60,14 @@ test('privacy page opt-out suppresses the analytics beacon for this tab', async 
   await expect(page.getByRole('status')).toContainText('off until you change this preference');
 
   const nextVisit = await page.context().newPage();
-  await nextVisit.goto('/');
+  await nextVisit.goto('/app/');
   await nextVisit.waitForTimeout(3200);
   expect(beaconRequested).toBe(false);
   await expect(nextVisit.locator('script[data-cf-beacon]')).toHaveCount(0);
 });
 
 test('does not move the footer after the application becomes ready', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   const footer = page.locator('footer');
   const initialTop = await footer.evaluate((element) => element.getBoundingClientRect().top);
   await page.waitForTimeout(100);

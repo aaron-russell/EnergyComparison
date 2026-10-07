@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
@@ -80,11 +81,20 @@ const previewHeadersFor = (path: string) => {
 
 export default defineConfig({
   appType: 'mpa',
+  build: {
+    rollupOptions: {
+      input: {
+        landing: resolve(import.meta.dirname, 'index.html'),
+        app: resolve(import.meta.dirname, 'app/index.html'),
+      },
+    },
+  },
   plugins: [
     react(),
     {
       name: 'inline-critical-loading-style',
-      transformIndexHtml(html) {
+      transformIndexHtml(html, context) {
+        if (context.path !== '/app/index.html') return html;
         return {
           html,
           tags: [
@@ -136,6 +146,12 @@ export default defineConfig({
             return;
           }
           const pathname = request.url?.split('?')[0] ?? '/';
+          if (request.method === 'GET' && pathname === '/app') {
+            response.statusCode = 301;
+            response.setHeader('Location', '/app/');
+            response.end();
+            return;
+          }
           const asset = new URL(`./dist${pathname}`, import.meta.url);
           const index = new URL(
             `./dist${pathname.endsWith('/') ? pathname : `${pathname}/`}index.html`,

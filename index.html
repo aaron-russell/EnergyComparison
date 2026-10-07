@@ -5,97 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      data-energy-replay-seo="description"
-      content="Connect an energy provider or use synthetic data to begin a private, browser-based replay of your household usage."
+      content="Replay your household's past energy use against tariffs you choose. Compare historical electricity and gas costs with a private, browser-based tool."
     />
-    <link
-      rel="canonical"
-      data-energy-replay-seo="canonical"
-      href="https://energy.russell-tech.co.uk/"
-    />
+    <link rel="canonical" href="https://energy.russell-tech.co.uk/" />
+    <meta property="og:type" content="website" />
     <meta
       property="og:title"
-      data-energy-replay-seo="og:title"
-      content="Connect your energy data | Energy Replay"
+      content="Compare energy tariffs using your past usage | Energy Replay"
     />
     <meta
       property="og:description"
-      data-energy-replay-seo="og:description"
-      content="Connect an energy provider or use synthetic data to begin a private, browser-based replay of your household usage."
+      content="Replay your household's past energy use against tariffs you choose. Explore historical costs in a private browser session."
     />
-    <meta
-      property="og:url"
-      data-energy-replay-seo="og:url"
-      content="https://energy.russell-tech.co.uk/"
-    />
-    <meta
-      property="og:image"
-      data-energy-replay-seo="og:image"
-      content="https://energy.russell-tech.co.uk/og-image.png"
-    />
-    <meta name="twitter:card" data-energy-replay-seo="twitter:card" content="summary_large_image" />
+    <meta property="og:url" content="https://energy.russell-tech.co.uk/" />
+    <meta property="og:image" content="https://energy.russell-tech.co.uk/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      data-energy-replay-seo="twitter:title"
-      content="Connect your energy data | Energy Replay"
+      content="Compare energy tariffs using your past usage | Energy Replay"
     />
     <meta
       name="twitter:description"
-      data-energy-replay-seo="twitter:description"
-      content="Connect an energy provider or use synthetic data to begin a private, browser-based replay of your household usage."
+      content="Replay your household's past energy use against tariffs you choose. Explore historical costs in a private browser session."
     />
-    <meta
-      name="twitter:url"
-      data-energy-replay-seo="twitter:url"
-      content="https://energy.russell-tech.co.uk/"
-    />
-    <meta
-      name="twitter:image"
-      data-energy-replay-seo="twitter:image"
-      content="https://energy.russell-tech.co.uk/og-image.png"
-    />
+    <meta name="twitter:image" content="https://energy.russell-tech.co.uk/og-image.png" />
     <meta name="theme-color" content="#151518" />
-    <title>Connect your energy data | Energy Replay</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/design-tokens.css" />
+    <link rel="stylesheet" href="/site-header.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <script defer src="/site-header.js"></script>
+    <title>Compare energy tariffs using your past usage | Energy Replay</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://energy.russell-tech.co.uk/#website",
+            "name": "Energy Replay",
+            "url": "https://energy.russell-tech.co.uk/",
+            "description": "A private browser-based tool for replaying household energy use against tariffs you choose.",
+            "inLanguage": "en-GB"
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://energy.russell-tech.co.uk/#webpage",
+            "url": "https://energy.russell-tech.co.uk/",
+            "name": "Compare energy tariffs using your past usage | Energy Replay",
+            "description": "Replay your household's past energy use against tariffs you choose. Compare historical electricity and gas costs with a private, browser-based tool.",
+            "isPartOf": { "@id": "https://energy.russell-tech.co.uk/#website" },
+            "about": { "@id": "https://energy.russell-tech.co.uk/#software" },
+            "inLanguage": "en-GB"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://energy.russell-tech.co.uk/#software",
+            "name": "Energy Replay",
+            "url": "https://energy.russell-tech.co.uk/app/",
+            "description": "A browser-based application that compares user-provided energy tariffs against historical household usage.",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "Web",
+            "image": "https://energy.russell-tech.co.uk/og-image.png"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="app-loading-skeleton" aria-hidden="true">
-      <div class="loading-skeleton-shell">
-        <aside class="loading-skeleton-sidebar">
-          <div class="loading-skeleton-brand">Energy Replay</div>
-          <div class="loading-skeleton-nav loading-skeleton-block"></div>
-          <div class="loading-skeleton-nav loading-skeleton-block"></div>
-          <div class="loading-skeleton-nav loading-skeleton-block"></div>
-        </aside>
-        <div class="loading-skeleton-workspace">
-          <header class="loading-skeleton-header">
-            <div class="loading-skeleton-block loading-skeleton-header-line"></div>
-            <div class="loading-skeleton-block loading-skeleton-header-action"></div>
-          </header>
-          <main class="loading-skeleton-main">
-            <div class="loading-skeleton-heading">
-              <div class="loading-skeleton-block loading-skeleton-heading-line"></div>
-              <div class="loading-skeleton-block loading-skeleton-subheading-line"></div>
-            </div>
-            <div class="loading-skeleton-grid">
-              <section class="loading-skeleton-panel">
-                <div class="loading-skeleton-block loading-skeleton-panel-title"></div>
-                <div class="loading-skeleton-block loading-skeleton-field"></div>
-                <div class="loading-skeleton-block loading-skeleton-field"></div>
-                <div class="loading-skeleton-block loading-skeleton-button"></div>
-              </section>
-              <aside class="loading-skeleton-panel loading-skeleton-explainer">
-                <div class="loading-skeleton-block loading-skeleton-panel-title"></div>
-                <div class="loading-skeleton-block loading-skeleton-copy"></div>
-                <div class="loading-skeleton-block loading-skeleton-copy short"></div>
-              </aside>
-            </div>
-          </main>
+    <energy-site-header></energy-site-header>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">A clearer way to compare household energy costs</p>
+        <h1>Compare tariffs using the energy you actually used.</h1>
+        <p class="intro">
+          Replay the same past electricity and gas usage against tariff rates you choose. See how
+          historical costs compare month by month, with your data kept in your browser session.
+        </p>
+        <div class="actions">
+          <a class="button primary" href="/app/">Start a replay</a>
+          <a class="button secondary" href="/docs/guide/using-the-app.html">See how it works</a>
         </div>
+        <p class="note">Use synthetic examples to explore the app without connecting an account.</p>
+      </section>
+
+      <section class="section" aria-labelledby="steps-title">
+        <p class="eyebrow">Your usage. Your tariff rates.</p>
+        <h2 id="steps-title">A like-for-like view of past energy costs</h2>
+        <div class="steps">
+          <article>
+            <span>01</span>
+            <h3>Bring your usage history</h3>
+            <p>
+              Connect a supported provider or import your own half-hourly electricity and gas data.
+              Synthetic examples are available for a first look.
+            </p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Check the coverage</h3>
+            <p>
+              Review which intervals are measured, where readings are missing, and any estimates
+              before using them in a comparison.
+            </p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Compare tariffs you choose</h3>
+            <p>
+              Enter the rates and standing charges you want to compare. The same selected usage and
+              dates are replayed against each tariff.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="privacy" aria-labelledby="privacy-title">
+        <div>
+          <p class="eyebrow">Private by design</p>
+          <h2 id="privacy-title">Your energy history stays in your session</h2>
+        </div>
+        <div>
+          <p>
+            Imported readings, connection credentials, and comparison progress are held in the
+            browser tab session. Credentials and live connections are not saved. Only tariff
+            definitions you explicitly save and your theme preference use local storage.
+          </p>
+          <a href="/docs/guide/privacy-and-energy-data.html">Read how energy data is handled →</a>
+        </div>
+      </section>
+
+      <section class="section limits" aria-labelledby="limits-title">
+        <p class="eyebrow">Know what the result means</p>
+        <h2 id="limits-title">A historical replay, not a forecast</h2>
+        <p>
+          Energy Replay prices past usage against the tariff definitions you provide. It does not
+          predict future bills, fetch a live supplier catalogue, rank suppliers, provide energy
+          advice, or guarantee savings. Results depend on the data, dates, and rates entered.
+        </p>
+        <a href="/docs/guide/understanding-historical-comparisons.html"
+          >Understand the comparison and its limits →</a
+        >
+      </section>
+
+      <section class="closing">
+        <h2>Explore a replay with synthetic data</h2>
+        <p>See the workflow before connecting a provider or importing household history.</p>
+        <a class="button primary" href="/app/">Open Energy Replay</a>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="footer-main">
+        <div class="footer-brand">
+          <a class="site-brand" href="/" aria-label="Energy Replay by Russell Tech home">
+            <img src="/logo.svg" alt="" width="32" height="32" />
+            <span class="site-brand-copy">
+              Energy Replay
+              <small>BY RUSSELL TECH</small>
+            </span>
+          </a>
+          <p>A browser-based way to compare household energy costs using past usage.</p>
+        </div>
+        <nav class="footer-links" aria-label="Explore Energy Replay">
+          <h2>Explore</h2>
+          <a href="/app/">Open the app</a>
+          <a href="/docs/guide/using-the-app.html">How it works</a>
+          <a href="/docs/guide/understanding-historical-comparisons.html">Understanding results</a>
+        </nav>
+        <nav class="footer-links" aria-label="Information and support">
+          <h2>Information</h2>
+          <a href="/docs/guide/privacy-and-energy-data.html">Privacy and energy data</a>
+          <a href="/docs/privacy.html">Privacy policy</a>
+          <a href="/docs/about.html">About Energy Replay</a>
+          <a href="/docs/contact.html">Contact</a>
+          <a href="https://russell-tech.co.uk/">Russell Tech</a>
+        </nav>
       </div>
-    </div>
-    <div id="root"></div>
-    <noscript><a href="/docs/">Read the Energy Replay documentation</a></noscript>
-    <script defer src="/analytics-loader.js"></script>
-    <script type="module" src="/src/main.tsx"></script>
+      <div class="footer-bottom">
+        <span>© 2026 Aaron Russell · Energy Replay by Russell Tech</span>
+        <span>Independent historical comparison tool</span>
+      </div>
+    </footer>
   </body>
 </html>

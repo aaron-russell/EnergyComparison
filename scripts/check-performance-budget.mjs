@@ -2,7 +2,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 
 const outputDirectory = 'dist/assets';
-const html = readFileSync('dist/index.html', 'utf8');
+const landing = readFileSync('dist/index.html', 'utf8');
+const html = readFileSync('dist/app/index.html', 'utf8');
 const assetReferences = [...html.matchAll(/(?:src|href)="(\/assets\/[^"?]+)"/g)].map(
   ([, reference]) => reference,
 );
@@ -32,8 +33,11 @@ function report(label, reference) {
   return sizes;
 }
 
-if (!entryScript) failures.push('No initial JavaScript asset is referenced by dist/index.html');
-if (!entryStyle) failures.push('No initial stylesheet asset is referenced by dist/index.html');
+if (/(?:src|href)="\/assets\/[^"?]+\.js/.test(landing)) {
+  failures.push('The household landing page should not load application JavaScript');
+}
+if (!entryScript) failures.push('No initial JavaScript asset is referenced by dist/app/index.html');
+if (!entryStyle) failures.push('No initial stylesheet asset is referenced by dist/app/index.html');
 if (/rel="preload"[^>]+as="image"[^>]+og-image\.png/i.test(html)) {
   failures.push('The social image must not be preloaded on the initial route');
 }

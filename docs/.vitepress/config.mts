@@ -1,12 +1,10 @@
 import { defineConfig } from 'vitepress';
-import packageJson from '../../package.json';
 import { buildJsonLd, canonicalUrl, jsonLdScript, SOCIAL_IMAGE_URL } from '../../src/seo';
 
 const repository = 'https://github.com/aaron-russell/EnergyComparison';
 const site = 'https://energy.russell-tech.co.uk';
 const authorWebsite = 'https://aaron-russell.co.uk';
 const organizationWebsite = 'https://russell-tech.co.uk';
-const version = packageJson.version;
 const authorId = `${site}/docs/about.html#aaron-russell`;
 const organizationId = `${site}/docs/about.html#russell-tech`;
 const referenceSidebar = [
@@ -30,10 +28,23 @@ export default defineConfig({
   titleTemplate: false,
   lastUpdated: true,
   appearance: false,
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => tag === 'energy-site-header',
+      },
+    },
+  },
   locales: {
     root: { label: 'English', lang: 'en' },
   },
-  head: [['script', { src: '/docs/theme-sync.js' }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/docs/logo.svg' }],
+    ['link', { rel: 'stylesheet', href: '/design-tokens.css' }],
+    ['link', { rel: 'stylesheet', href: '/site-header.css' }],
+    ['script', { type: 'module', src: '/site-header.js' }],
+    ['script', { src: '/docs/theme-sync.js' }],
+  ],
   transformHead({ pageData }) {
     const frontmatter = pageData.frontmatter as {
       canonical?: string;
@@ -133,16 +144,10 @@ export default defineConfig({
     logo: '/logo.svg',
     siteTitle: 'Energy Replay',
     nav: [
-      { text: 'Open app', link: '/' },
-      { text: 'Guide', link: '/guide/using-the-app' },
-      { text: 'Open the app', link: 'https://energy.russell-tech.co.uk/' },
-      { text: 'Extend', link: '/guide/adding-an-adapter' },
+      { text: 'How it works', link: '/guide/using-the-app' },
+      { text: 'Privacy', link: '/guide/privacy-and-energy-data' },
       { text: 'About', link: '/about' },
-      { text: 'Projects', link: '/projects/energy-replay' },
-      { text: 'Policies', link: '/privacy' },
-      { text: 'Operations', link: '/operations/cloudflare-pages' },
-      { text: 'Reference', link: '/reference/contracts' },
-      { text: `v${version}`, link: '/versions' },
+      { text: 'Open app', link: 'https://energy.russell-tech.co.uk/app/' },
     ],
     sidebar: {
       '/guide/': [
@@ -150,6 +155,11 @@ export default defineConfig({
           text: 'Use the app',
           items: [
             { text: 'Overview', link: '/guide/using-the-app' },
+            {
+              text: 'Compare past energy costs',
+              link: '/guide/understanding-historical-comparisons',
+            },
+            { text: 'Privacy and energy data', link: '/guide/privacy-and-energy-data' },
             { text: 'Connect and import history', link: '/guide/connection-and-import' },
             { text: 'Coverage and estimates', link: '/guide/coverage-and-estimates' },
             { text: 'EV charging', link: '/guide/ev-charging' },

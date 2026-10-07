@@ -5,9 +5,9 @@ description: Build, preview and release the Energy Replay application and handbo
 
 # Deploy to Cloudflare Pages
 
-The existing GitHub Actions deployment builds the React application and VitePress handbook together,
-then deploys `dist` to the `energy-replay` Pages project. The application is at `/`; the handbook is at
-`/docs/`.
+The existing GitHub Actions deployment builds the household landing page, React application, and
+VitePress handbook together, then deploys `dist` to the `energy-replay` Pages project. The landing
+page is at `/`, the application is at `/app/`, and the handbook is at `/docs/`.
 
 ## Local verification
 
@@ -17,13 +17,14 @@ npm run build
 npm run preview
 ```
 
-Check `/`, `/docs/`, a nested handbook page, and an application route. The VitePress base path is
-`/docs/`, so do not test the generated site only at its filesystem root.
+Check `/`, `/app/`, `/docs/`, and a nested handbook page. The VitePress base path is `/docs/`, so do
+not test the generated site only at its filesystem root.
 
 ## Routing and response policy
 
-Pages serves matching files from `dist/`, so the generated handbook remains under `/docs/` and the
-application keeps its static SPA fallback. The canonical handbook entry point is `/docs/`; do not add
+Pages serves matching files from `dist/`, so the landing page remains at `/`, the application keeps
+its static SPA fallback at `/app/`, and the generated handbook remains under `/docs/`. The canonical
+handbook entry point is `/docs/`; do not add
 a broad redirect or `404.html`, because either can interfere with nested docs routes or application
 fallback behavior.
 

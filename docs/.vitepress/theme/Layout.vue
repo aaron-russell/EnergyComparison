@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onMounted } from 'vue';
 import { useData } from 'vitepress';
 import DefaultTheme from 'vitepress/theme';
 import AnalyticsPreference from './AnalyticsPreference.vue';
@@ -13,6 +13,12 @@ const labels: Record<string, string> = {
   operations: 'Operations',
 };
 const docHref = (href: string) => `/docs${href}.html`;
+onMounted(async () => {
+  if (!new URLSearchParams(window.location.search).has('search')) return;
+  await nextTick();
+  document.querySelector<HTMLButtonElement>('.DocSearch-Button')?.click();
+  window.history.replaceState(window.history.state, '', window.location.pathname);
+});
 const related: Record<string, { text: string; href: string }[]> = {
   '/guide/using-the-app': [
     { text: 'Tariffs and comparison', href: '/guide/tariffs-and-comparison' },
@@ -130,6 +136,7 @@ const related: Record<string, { text: string; href: string }[]> = {
 </script>
 
 <template>
+  <energy-site-header />
   <DefaultTheme.Layout>
     <template #doc-top>
       <nav v-if="path !== '/index'" class="site-breadcrumbs" aria-label="Breadcrumb">
