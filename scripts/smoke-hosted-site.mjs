@@ -37,8 +37,15 @@ requireHeader(home.headers, 'cache-control', 'must-revalidate');
 assert.equal(home.headers.get('x-robots-tag')?.includes('noindex') ?? false, expectNoIndex);
 
 const homeHtml = await home.text();
-const appAsset = homeHtml.match(/(?:src|href)="(\/assets\/[^"]+\.js)"/)?.[1];
-assert.ok(appAsset, 'Application JavaScript asset was not referenced by the homepage.');
+assert.match(homeHtml, /<h1[^>]*>[\s\S]*?Compare tariffs using the energy you actually used\./);
+
+const app = await request('/app/');
+requireHeader(app.headers, 'content-type', 'text/html');
+requireHeader(app.headers, 'cache-control', 'must-revalidate');
+assert.equal(app.headers.get('x-robots-tag')?.includes('noindex') ?? false, expectNoIndex);
+const appHtml = await app.text();
+const appAsset = appHtml.match(/(?:src|href)="(\/assets\/[^"]+\.js)"/)?.[1];
+assert.ok(appAsset, 'Application JavaScript asset was not referenced by /app/.');
 const appAssetResponse = await request(appAsset);
 requireHeader(appAssetResponse.headers, 'cache-control', 'immutable');
 

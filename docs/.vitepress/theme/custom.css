@@ -198,11 +198,60 @@ body {
   font-size: 0.875rem;
 }
 
+.analytics-preference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 32px auto;
+  max-width: 688px;
+  padding: 20px;
+  border: 1px solid var(--er-border);
+  border-radius: var(--er-card-radius);
+  background: var(--er-surface);
+  color: var(--er-text);
+}
+
+.analytics-preference h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.analytics-preference p {
+  margin: 8px 0 0;
+}
+
+.analytics-preference__status {
+  font-weight: 600;
+}
+
+.analytics-preference button {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--er-border);
+  border-radius: var(--er-control-radius);
+  background: var(--er-raised);
+  color: var(--er-text);
+  cursor: pointer;
+}
+
+.analytics-preference button:focus-visible {
+  outline: 2px solid var(--er-accent);
+  outline-offset: 2px;
+}
+
 .related-content {
   border-top: 1px solid var(--vp-c-divider);
   margin: 2.5rem auto 0;
   max-width: 688px;
   padding-top: 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .analytics-preference {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 .related-content h2 {

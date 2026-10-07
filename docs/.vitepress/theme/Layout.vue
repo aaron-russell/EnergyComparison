@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted } from 'vue';
 import { useData } from 'vitepress';
 import DefaultTheme from 'vitepress/theme';
+import AnalyticsPreference from './AnalyticsPreference.vue';
 
 const { page } = useData();
 const path = computed(() => `/${page.value.relativePath.replace(/\.md$/, '')}`);
@@ -146,6 +147,7 @@ const related: Record<string, { text: string; href: string }[]> = {
           <span v-if="index < segments.length - 1" aria-hidden="true">/</span>
         </template>
       </nav>
+      <AnalyticsPreference v-if="path === '/privacy'" />
     </template>
     <template #doc-bottom>
       <section v-if="related[path]" class="related-content" aria-label="Related reading">

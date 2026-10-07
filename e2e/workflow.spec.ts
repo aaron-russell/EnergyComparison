@@ -225,6 +225,25 @@ async function syntheticImport(page: Page) {
   await page.getByRole('button', { name: 'Review coverage' }).click();
 }
 
+async function finishComparison(page: Page, electricityOnly = false) {
+  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  await page.getByRole('button', { name: 'Continue to tariffs' }).click();
+  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
+  await expect(page.getByText('25.00p/kWh · 49.00p/day')).toBeVisible();
+  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
+  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
+  if (electricityOnly) {
+    await page.getByLabel('Fuel comparison').selectOption('electricity');
+  }
+  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(
+    page.getByRole('table', { name: 'Identical period, supplies and energy for all tariffs' }),
+  ).toBeVisible();
+}
+
 async function compareSyntheticPeriod(
   page: Page,
   start: string,
@@ -422,6 +441,74 @@ test('finds the lowest compatible open tariff without a current baseline', async
   await expect(page.getByText('Not supplied', { exact: true })).toBeVisible();
   await expect(page.getByText('Open tariff data · Yorkshire')).toBeVisible();
   await expect(page.getByText(/12-month term/)).toBeVisible();
+});
+
+test('Octopus discovery, authenticated interval import and tariff comparison', async ({ page }) => {
+  const requests: Array<{ url: URL; headers: Record<string, string>; method: string }> = [];
+  const intervals = Array.from({ length: 48 }, (_, index) => {
+    const start = new Date(Date.UTC(2024, 2, 1, 0, index * 30));
+    const end = new Date(start.getTime() + 30 * 60 * 1000);
+    return {
+      interval_start: start.toISOString(),
+      interval_end: end.toISOString(),
+      consumption: '0.25',
+    };
+  });
+  await page.route('https://api.octopus.energy/**', async (route) => {
+    const request = route.request();
+    requests.push({
+      url: new URL(request.url()),
+      headers: await request.allHeaders(),
+      method: request.method(),
+    });
+    const response = request.url().includes('/v1/accounts/')
+      ? {
+          properties: [
+            {
+              electricity_meter_points: [
+                {
+                  mpan: 'SYNTHETIC-MPAN',
+                  meters: [{ serial_number: 'SYNTHETIC-METER' }],
+                  is_export: false,
+                },
+              ],
+              gas_meter_points: [],
+            },
+          ],
+        }
+      : { results: intervals, next: null };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(response) });
+  });
+
+  await page.goto('/app/');
+  await page.getByLabel('API key', { exact: true }).fill('synthetic-key');
+  await page.getByLabel('Account number', { exact: true }).fill('A-SYNTHETIC');
+  await page.getByLabel('Gas API unit (confirm before import)').selectOption('none');
+  await page.getByRole('button', { name: 'Connect provider', exact: true }).click();
+  await expect(page.getByText('Connected · 1 import supplies discovered')).toBeVisible();
+  await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
+  await page.getByRole('button', { name: 'Choose import period' }).click();
+  await page.getByLabel('Start date (included)').fill('2024-03-01');
+  await page.getByLabel('End date (excluded)').fill('2024-03-02');
+  await page.getByRole('button', { name: 'Import history / retry' }).click();
+  await expect(page.getByText('48 half-hour readings retained.')).toBeVisible();
+  expect(requests).toHaveLength(2);
+  expect(requests.map(({ method }) => method)).toEqual(['GET', 'GET']);
+  expect(requests[0].url.pathname).toBe('/v1/accounts/A-SYNTHETIC/');
+  expect(requests[0].headers.authorization).toBe(
+    `Basic ${Buffer.from('synthetic-key:').toString('base64')}`,
+  );
+  expect(requests[1].url.pathname).toContain('/v1/electricity-meter-points/');
+  expect(requests[1].url.searchParams.get('period_from')).toBe('2024-03-01T00:00:00Z');
+  expect(requests[1].url.searchParams.get('period_to')).toBe('2024-03-02T00:00:00Z');
+  expect(requests[1].url.searchParams.get('page_size')).toBe('1500');
+  await page.getByRole('button', { name: 'Review coverage' }).click();
+  await expect(page.getByText('100.0%', { exact: true })).toBeVisible();
+  await finishComparison(page, true);
+  await expect(page.getByText('12 kWh electricity · 0 kWh gas')).toBeVisible();
+  expect(
+    await page.evaluate(async () => JSON.stringify({ ...localStorage, ...sessionStorage })),
+  ).not.toContain('synthetic-key');
 });
 
 test('labels complete and incomplete 12-month periods correctly', async ({ page }) => {

@@ -36,6 +36,34 @@ test('keeps the critical path strict and does not preload the social image', asy
   expect(html).not.toContain('beacon.min.js');
 });
 
+test('loads only the Cloudflare Web Analytics beacon after the page load', async ({ page }) => {
+  await page.route('https://static.cloudflareinsights.com/beacon.min.js', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }),
+  );
+  await page.goto('/app/');
+  await expect(page.locator('script[data-cf-beacon]')).toHaveAttribute(
+    'src',
+    'https://static.cloudflareinsights.com/beacon.min.js',
+  );
+});
+
+test('privacy page opt-out suppresses the analytics beacon for this tab', async ({ page }) => {
+  let beaconRequested = false;
+  await page.route('https://static.cloudflareinsights.com/beacon.min.js', (route) => {
+    beaconRequested = true;
+    return route.fulfill({ status: 200, contentType: 'application/javascript', body: '' });
+  });
+  await page.goto('/docs/privacy.html');
+  await page.getByRole('button', { name: 'Turn off analytics' }).click();
+  await expect(page.getByRole('status')).toContainText('off until you change this preference');
+
+  const nextVisit = await page.context().newPage();
+  await nextVisit.goto('/app/');
+  await nextVisit.waitForTimeout(3200);
+  expect(beaconRequested).toBe(false);
+  await expect(nextVisit.locator('script[data-cf-beacon]')).toHaveCount(0);
+});
+
 test('does not move the footer after the application becomes ready', async ({ page }) => {
   await page.goto('/app/');
   const footer = page.locator('footer');
