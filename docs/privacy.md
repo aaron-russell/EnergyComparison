@@ -25,8 +25,9 @@ provider's records or terms.
 Russell Tech does not collect or store your household usage information, imported readings, account
 details, meter or device identifiers, charging history, credentials or calculated results on its own
 servers. The application processes this information in your browser, and your browser may send the
-information required for a connection directly to a provider you choose. Technical hosting and
-privacy-focused analytics may still process limited website or performance data as described below.
+information required for a connection directly to a provider you choose. Technical hosting and basic
+Cloudflare Web Analytics may process limited website and performance data as described below. The app
+does not use analytics for advertising or behavioural profiling.
 
 ## Who is responsible for your data?
 
@@ -63,24 +64,29 @@ to use.
 
 The application and documentation site do not set cookies for login, advertising, profiling or
 personalisation. They also do not use a service worker, remote fonts, session replay, advertising
-pixels or other third-party tracking tools.
+pixels, Zaraz, or analytics other than Cloudflare Web Analytics.
 
-| Technology                    | What it does                                                                                | Where it is stored                                           | Retention                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
-| `energy-replay:theme`         | Remembers the selected dark or light theme.                                                 | Browser local storage                                        | Until you remove it or clear site data                     |
-| `energy-replay:saved-tariffs` | Stores tariff definitions that you explicitly save.                                         | Browser local storage                                        | Until you delete the saved tariff or clear site data       |
-| Session progress              | Holds non-credential imports, readings, charging data, results and in-progress form values. | Browser `sessionStorage` for the current tab                 | Until tab close, **Clear session**, or storage failure     |
-| Cloudflare Web Analytics      | Measures aggregate page-performance signals for the application.                            | No cookie or local-storage identifier is used by the beacon. | Controlled by Cloudflare's service and dashboard retention |
+| Technology                    | What it does                                                                                | Where it is stored                                           | Retention                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
+| `energy-replay:theme`         | Remembers the selected dark or light theme.                                                 | Browser local storage                                        | Until you remove it or clear site data                    |
+| `energy-replay:saved-tariffs` | Stores tariff definitions that you explicitly save.                                         | Browser local storage                                        | Until you delete the saved tariff or clear site data      |
+| Session progress              | Holds non-credential imports, readings, charging data, results and in-progress form values. | Browser `sessionStorage` for the current tab                 | Until tab close, **Clear session**, or storage failure    |
+| Analytics preference          | Remembers if you turned off Cloudflare analytics.                                           | First-party cookie                                           | One year or until you change it                           |
+| Cloudflare Web Analytics      | Measures basic aggregate page-performance and usage signals for the application.            | No cookie or local-storage identifier is used by the beacon. | Controlled by Cloudflare's service and dashboard settings |
 
-Cloudflare Web Analytics is loaded only by the application shell, not by the documentation pages.
-It is used for privacy-focused performance measurement and does not receive the household data
-held by the app. Cloudflare states that Web Analytics does not use cookies or local storage and
-does not collect visitors' personal data. See [Cloudflare's Web Analytics overview](https://developers.cloudflare.com/web-analytics/about/)
-and [data-collection documentation](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/).
+The Cloudflare Web Analytics beacon is loaded by the application shell only, not by documentation
+pages. It does not receive household data held by the app. Cloudflare states that Web Analytics does
+not use cookies or local storage and does not collect visitors' personal data. See [Cloudflare's
+Web Analytics overview](https://developers.cloudflare.com/web-analytics/about/) and [data collection
+documentation](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/).
 
-Because no non-essential cookies are currently set, there is no cookie-consent banner in this
-version of the site. If that changes, the policy will identify the new technology and the site
-will obtain consent where applicable before using non-essential cookies or similar storage.
+There is no accept-before-use analytics banner: Cloudflare Web Analytics is used only for aggregate
+statistics to help improve the service, and users have a simple, free way to object. The privacy
+page provides a **Turn off analytics** control and an equally accessible way to turn it back on.
+Your choice is saved in a first-party
+cookie for one year or until you change it. The cookie only remembers your analytics preference; it
+is not used to identify you or measure usage. Cloudflare analytics is not loaded when this opt-out
+cookie is present.
 
 ## Why we use data and our legal basis
 
@@ -90,12 +96,14 @@ We use information only for these purposes:
   calculation and export;
 - to remember the tariff definitions and theme preference you explicitly save locally;
 - to keep the site secure, available and usable; and
-- to understand aggregate application performance through Cloudflare Web Analytics.
+- to collect aggregate site-usage and performance statistics through Cloudflare Web Analytics, so
+  we can understand and improve the service.
 
 For data held only in your browser, the processing is necessary to provide the feature you choose
 to use. For hosting and security, Russell Tech relies on the legitimate interest of operating and
-protecting a public website. Web Analytics is limited to performance measurement and is not used
-for advertising or behavioural profiling. The relevant provider may apply different purposes and
+protecting a public website. Web Analytics is limited to aggregate statistics for understanding and
+improving the site; it is not used for advertising, profiling, or tracking individuals across sites.
+The relevant provider may apply different purposes and
 legal bases to data sent directly to it.
 
 ## Who receives data?
@@ -107,9 +115,10 @@ Russell Tech does not sell household data. Data may be processed by:
 - the energy or charging provider you deliberately connect to, because your browser sends the
   connection request directly to that provider.
 
-The app has no analytics other than the Cloudflare Web Analytics beacon, no application logging of
-sensitive values, and no general-purpose proxy. The provider's own terms and privacy notice apply
-to its systems and account data.
+The app uses only the Cloudflare Web Analytics beacon for basic aggregate measurement. Zaraz and
+other analytics or tracking are disabled. There is no application logging of sensitive values or
+general-purpose proxy. The provider's own terms and privacy notice apply to its systems and account
+data.
 
 ## Retention and deletion
 

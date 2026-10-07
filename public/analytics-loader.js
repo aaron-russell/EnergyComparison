@@ -1,7 +1,7 @@
 (() => {
   const preferenceKey = 'energy-replay-analytics-opt-out';
   try {
-    if (document.cookie.split(';').some((cookie) => cookie.trim() === preferenceKey + '=true')) {
+    if (document.cookie.split(';').some((cookie) => cookie.trim() === `${preferenceKey}=true`)) {
       return;
     }
   } catch {

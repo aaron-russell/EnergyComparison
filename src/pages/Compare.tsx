@@ -119,7 +119,7 @@ function ComparePanel({
         renewableChange={renewableChange}
       />
       <button className="primary" disabled={busy || tariffCount < 2} onClick={compare}>
-        Replay these tariffs
+        Compare using this usage
       </button>
       <OperationStatus
         busy={busy}

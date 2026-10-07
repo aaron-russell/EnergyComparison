@@ -7,8 +7,10 @@ plugins. Unsupported fields, versions and schedules are rejected. Credentials an
 identifiers belong to connection closures; neither the calculation worker nor tariff exports
 receive them. Imported content is rendered as React text, not HTML.
 
-Transport uses fixed provider origins. Octopus pagination must retain the original origin and
-pathname, must progress and has a page limit. Cookies, API caching and redirects are disabled.
+Provider transport uses fixed origins. Octopus pagination must retain the original origin and
+pathname, must progress and has a page limit. Provider cookies, API caching and redirects are
+disabled. A first-party preference cookie stores only the user's Cloudflare analytics opt-out;
+provider requests never receive it.
 Errors are sanitised: upstream error bodies and request URLs are never displayed or logged.
 
 `public/_headers` defines production CSP with no evaluated scripts, no inline styles, and build-time

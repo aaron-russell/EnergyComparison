@@ -34,6 +34,8 @@ test('keeps the critical path strict and does not preload the social image', asy
   expect(html).not.toMatch(/rel="preload"[^>]+og-image\.png/i);
   expect(html).toContain('/analytics-loader.js');
   expect(html).not.toContain('beacon.min.js');
+  expect(csp).toContain('https://static.cloudflareinsights.com');
+  expect(csp).toContain('https://cloudflareinsights.com');
 });
 
 test('loads only the Cloudflare Web Analytics beacon after the page load', async ({ page }) => {

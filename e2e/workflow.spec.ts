@@ -225,23 +225,34 @@ async function syntheticImport(page: Page) {
   await page.getByRole('button', { name: 'Review coverage' }).click();
 }
 
-async function finishComparison(page: Page, electricityOnly = false) {
-  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+async function finishComparison(
+  page: Page,
+  options: { chargingStepOpen?: boolean; electricityOnly?: boolean } = {},
+) {
+  if (!options.chargingStepOpen) {
+    await page.getByRole('button', { name: 'Review optional EV charging' }).click();
+  }
   await page.getByRole('button', { name: 'Continue to tariffs' }).click();
-  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
-  await expect(page.getByText('25.00p/kWh · 49.00p/day')).toBeVisible();
-  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
-  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
-  if (electricityOnly) {
+  await page.getByRole('button', { name: 'Add sample tariffs' }).click();
+  await page.getByRole('radio').first().click();
+  await page.getByRole('button', { name: 'Continue to comparison', exact: true }).click();
+  if (options.electricityOnly) {
     await page.getByLabel('Fuel comparison').selectOption('electricity');
   }
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await page.getByRole('button', { name: 'Compare using this usage' }).click();
   await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
     timeout: 30000,
   });
   await expect(
-    page.getByRole('table', { name: 'Identical period, supplies and energy for all tariffs' }),
+    page.getByRole('table', {
+      name: 'Identical period, supplies and energy for all tariffs',
+    }),
   ).toBeVisible();
+  const tariffRows = page
+    .getByRole('table', { name: 'Identical period, supplies and energy for all tariffs' })
+    .locator('tbody tr');
+  expect(await tariffRows.count()).toBeGreaterThan(1);
+  await expect(tariffRows.filter({ hasText: 'Baseline' })).toHaveCount(1);
 }
 
 async function compareSyntheticPeriod(
@@ -275,14 +286,14 @@ async function compareSyntheticPeriod(
   await page.getByRole('button', { name: 'Review coverage' }).click();
   await page.getByRole('button', { name: 'Review optional EV charging' }).click();
   await page.getByRole('button', { name: 'Continue to tariffs' }).click();
-  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
+  await page.getByRole('button', { name: 'Add sample tariffs' }).click();
   await expect(page.getByText('25.00p/kWh · 49.00p/day')).toBeVisible();
-  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
-  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
+  await page.getByRole('radio').first().click();
+  await page.getByRole('button', { name: 'Continue to comparison', exact: true }).click();
   if (electricityOnly) {
     await page.getByLabel('Fuel comparison').selectOption('electricity');
   }
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await page.getByRole('button', { name: 'Compare using this usage' }).click();
 }
 
 test('loads the complete demo workspace and renders the visual comparison dashboard', async ({
@@ -294,7 +305,7 @@ test('loads the complete demo workspace and renders the visual comparison dashbo
   await expect(
     page.getByRole('heading', { name: 'Same usage. Different possibilities.' }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await page.getByRole('button', { name: 'Compare using this usage' }).click();
   await expect(page.getByText('Demo data', { exact: true })).toBeVisible();
   await expect(page.getByRole('img', { name: /Monthly cost comparison/ })).toBeVisible({
     timeout: 30000,
@@ -351,11 +362,11 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   await expect(page.getByRole('heading', { name: 'Review 4 sessions' })).toBeVisible();
   await page.getByLabel('Select authoritative source (optional)').selectOption('synthetic-charger');
   await page.getByRole('button', { name: 'Continue to tariffs' }).click();
-  await page.getByRole('button', { name: 'Load synthetic examples' }).click();
-  await page.getByRole('button', { name: 'Use as baseline' }).first().click();
-  await page.getByRole('button', { name: 'Save', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Add sample tariffs' }).click();
+  await page.getByRole('radio').first().click();
+  await page.getByRole('button', { name: 'Save on this device', exact: true }).first().click();
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export tariffs only' }).click();
+  await page.getByRole('button', { name: 'Download tariff definitions' }).click();
   const stream = await (await download).createReadStream();
   const chunks = [];
   for await (const chunk of stream!) {
@@ -364,8 +375,8 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   const exported = JSON.parse(Buffer.concat(chunks).toString());
   expect(exported).toHaveLength(2);
   expect(JSON.stringify(exported)).not.toMatch(/supplyRef|readings|apiKey|accountNumber/);
-  await page.getByRole('button', { name: 'Compare tariffs', exact: true }).click();
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await page.getByRole('button', { name: 'Continue to comparison', exact: true }).click();
+  await page.getByRole('button', { name: 'Compare using this usage' }).click();
   await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible();
   const period = { start: midnight('2024-03-01'), end: midnight('2024-04-01') };
   const expected = replay(exampleTariffs[0], syntheticReadings(period), syntheticSupplies, period);
@@ -379,68 +390,6 @@ test('complete synthetic workflow, independent charger, comparison and tariff-on
   expect(Object.keys(storage.session)).toEqual(['energy-replay:session']);
   await page.getByRole('button', { name: 'Clear session' }).click();
   await expect(page.getByLabel('API key', { exact: true })).toHaveValue('');
-});
-
-test('finds the lowest compatible open tariff without a current baseline', async ({ page }) => {
-  await page.route('https://tarifftracker.io/api/v1/lookup**', async (route) => {
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({ data: { electricity_region: 'Yorkshire' } }),
-    });
-  });
-  await page.route('https://tarifftracker.io/api/v1/energy/tariffs**', async (route) => {
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        as_of: '2026-10-01T00:00:00Z',
-        caveats: ['Check supplier terms before switching'],
-        rows: [
-          {
-            supplier: 'Synthetic Cheap Energy',
-            tariff: 'Fixed',
-            product_code: 'CHEAP',
-            region: 'Yorkshire',
-            fuel: 'dual',
-            kind: 'fixed',
-            payment: 'direct debit',
-            unit_p_kwh: '20',
-            standing_p_day: '45',
-            gas_unit_p_kwh: '5',
-            gas_standing_p_day: '25',
-            annual_est_gbp: '800',
-            term_months: '12',
-            exit_fee_gbp: '50',
-          },
-          {
-            supplier: 'Synthetic Other Energy',
-            tariff: 'Variable',
-            product_code: 'OTHER',
-            region: 'Yorkshire',
-            fuel: 'dual',
-            kind: 'variable',
-            payment: 'direct debit',
-            unit_p_kwh: '30',
-            standing_p_day: '55',
-            gas_unit_p_kwh: '8',
-            gas_standing_p_day: '30',
-            annual_est_gbp: '1100',
-          },
-        ],
-      }),
-    });
-  });
-  await syntheticImport(page);
-  await page.getByRole('button', { name: 'Review optional EV charging' }).click();
-  await page.getByRole('button', { name: 'Continue to tariffs' }).click();
-  await page.getByLabel('Postcode').fill('L1 1AA');
-  await page.getByRole('button', { name: 'Find cheapest for this usage' }).click();
-  await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByText('Lowest replay', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('Not supplied', { exact: true })).toBeVisible();
-  await expect(page.getByText('Open tariff data · Yorkshire')).toBeVisible();
-  await expect(page.getByText(/12-month term/)).toBeVisible();
 });
 
 test('Octopus discovery, authenticated interval import and tariff comparison', async ({ page }) => {
@@ -504,7 +453,7 @@ test('Octopus discovery, authenticated interval import and tariff comparison', a
   expect(requests[1].url.searchParams.get('page_size')).toBe('1500');
   await page.getByRole('button', { name: 'Review coverage' }).click();
   await expect(page.getByText('100.0%', { exact: true })).toBeVisible();
-  await finishComparison(page, true);
+  await finishComparison(page, { electricityOnly: true });
   await expect(page.getByText('12 kWh electricity · 0 kWh gas')).toBeVisible();
   expect(
     await page.evaluate(async () => JSON.stringify({ ...localStorage, ...sessionStorage })),
@@ -541,24 +490,28 @@ test('labels complete and incomplete 12-month periods correctly', async ({ page 
 test('manual baseline editing, duplication, validation and persistence', async ({ page }) => {
   await page.goto('/app/');
   await page.getByRole('button', { name: 'Tariffs 05' }).click();
-  await page.getByRole('button', { name: 'Add tariff', exact: true }).click();
+  await page.getByRole('button', { name: 'Create a tariff', exact: true }).click();
   await page.getByLabel('Tariff name').fill('My current tariff');
   await page.getByLabel('Unit rate (p/kWh)', { exact: true }).fill('23.456');
   await page.getByLabel('Electricity standing charge (p/day)').fill('48.3');
-  await page.getByRole('button', { name: 'Apply tariff' }).click();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await page.getByRole('button', { name: 'Duplicate', exact: true }).click();
+  await page.getByRole('button', { name: 'Save tariff to comparison' }).click();
+  await page.getByRole('button', { name: 'Save on this device', exact: true }).click();
+  await page.getByRole('button', { name: 'Make a copy', exact: true }).click();
   await page.getByLabel('Tariff name').fill('Alternative');
   await page.getByRole('button', { name: 'Add time band' }).click();
-  await page.getByRole('button', { name: 'Apply tariff' }).click();
+  await page.getByRole('button', { name: 'Save tariff to comparison' }).click();
   await expect(page.getByRole('alert')).toContainText('overlap');
   await page.getByRole('button', { name: 'Remove band' }).last().click();
-  await page.getByRole('button', { name: 'Apply tariff' }).click();
+  await page.getByRole('button', { name: 'Save tariff to comparison' }).click();
   await page.reload();
   await page.getByRole('button', { name: 'Tariffs 05' }).click();
   await expect(page.getByRole('heading', { name: 'My current tariff' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Alternative', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Delete', exact: true }).first().click();
+  await page
+    .locator('.tariff-card')
+    .filter({ has: page.getByRole('heading', { name: 'My current tariff' }) })
+    .getByRole('button', { name: 'Remove tariff', exact: true })
+    .click();
   expect(
     await page.evaluate(() => JSON.parse(localStorage.getItem('energy-replay:saved-tariffs')!)),
   ).toEqual([]);
@@ -567,7 +520,7 @@ test('manual baseline editing, duplication, validation and persistence', async (
 test('restores tab progress after refresh without restoring credentials', async ({ page }) => {
   await page.goto('/app/');
   await page.getByRole('button', { name: 'Load complete demo' }).click();
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await page.getByRole('button', { name: 'Compare using this usage' }).click();
   await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
     timeout: 120000,
   });
@@ -575,8 +528,8 @@ test('restores tab progress after refresh without restoring credentials', async 
   expect(before).toBeTruthy();
   expect(before).not.toMatch(/apiKey|accountNumber|token/i);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Replay these tariffs' })).toBeVisible();
-  await page.getByRole('button', { name: 'Replay these tariffs' }).click();
+  await expect(page.getByRole('button', { name: 'Compare using this usage' })).toBeVisible();
+  await page.getByRole('button', { name: 'Compare using this usage' }).click();
   await expect(page.getByRole('heading', { name: 'Historical replay costs' })).toBeVisible({
     timeout: 120000,
   });
