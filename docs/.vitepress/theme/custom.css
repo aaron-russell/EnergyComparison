@@ -43,7 +43,7 @@ body {
 /* The shared site header replaces VitePress's fixed navigation bar. */
 .VPSidebar {
   top: var(--er-site-header-height) !important;
-  z-index: 0 !important;
+  z-index: var(--vp-z-index-sidebar) !important;
 }
 
 .er-site-header {

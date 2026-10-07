@@ -64,7 +64,8 @@ energy-site-header {
   margin: 0;
 }
 
-.er-site-menu a {
+.er-site-menu a,
+.er-site-menu button {
   display: inline-flex;
   min-height: 42px;
   flex: 0 0 auto;
@@ -80,9 +81,38 @@ energy-site-header {
   white-space: nowrap;
 }
 
+.er-site-menu button {
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .er-site-menu a:hover,
-.er-site-menu a:focus-visible {
+.er-site-menu button:hover,
+.er-site-menu a:focus-visible,
+.er-site-menu button:focus-visible {
   color: var(--er-accent);
+}
+
+.er-site-menu button[hidden] {
+  display: none;
+}
+
+.er-site-menu .er-docs-sidebar-toggle {
+  gap: 7px;
+  padding-inline: 10px;
+  border-color: var(--er-border);
+  border-radius: 10px;
+  color: var(--er-muted);
+}
+
+.er-docs-sidebar-toggle svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.7;
 }
 
 .er-site-menu .er-site-search,
@@ -110,9 +140,20 @@ energy-site-header {
   color: var(--er-accent);
 }
 
-.er-site-header a:focus-visible {
+.er-site-header a:focus-visible,
+.er-site-header button:focus-visible {
   outline: 3px solid var(--er-focus);
   outline-offset: 3px;
+}
+
+.VPLocalNav .menu {
+  display: none !important;
+}
+
+@media (min-width: 960px) {
+  .er-site-menu .er-docs-sidebar-toggle {
+    display: none;
+  }
 }
 
 @media (max-width: 900px) {

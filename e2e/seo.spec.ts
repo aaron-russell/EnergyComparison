@@ -220,3 +220,44 @@ test('documentation desktop header shows the shared logo and one menu', async ({
   await expect(header).toHaveScreenshot('docs-header-desktop.png', { animations: 'disabled' });
   await expect(page).toHaveScreenshot('docs-desktop.png', { animations: 'disabled' });
 });
+
+test('mobile documentation header opens the handbook sidebar', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Visual baselines are recorded in Chromium.');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/docs/guide/using-the-app.html');
+
+  const menu = page.getByRole('button', { name: 'Open handbook menu' });
+  const sidebar = page.locator('.VPSidebar');
+  await expect(menu).toBeVisible();
+  await expect(page.locator('.VPLocalNav .menu')).toBeHidden();
+  await expect(sidebar).not.toHaveClass(/open/);
+  await expect(page).toHaveScreenshot('docs-mobile-sidebar-closed.png', {
+    animations: 'disabled',
+  });
+
+  await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(sidebar).toHaveClass(/open/);
+  await expect(sidebar).toHaveCSS('z-index', '60');
+  await expect(sidebar).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  expect(
+    await sidebar.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return (
+        document
+          .elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2)
+          ?.closest('.VPSidebar') === element
+      );
+    }),
+  ).toBe(true);
+  const comparisonGuide = sidebar.getByRole('link', {
+    name: 'Compare past energy costs',
+    exact: true,
+  });
+  await expect(comparisonGuide).toBeVisible();
+  await expect(page).toHaveScreenshot('docs-mobile-sidebar-open.png', {
+    animations: 'allow',
+  });
+  await comparisonGuide.click();
+  await expect(page).toHaveURL(/understanding-historical-comparisons\.html$/);
+});

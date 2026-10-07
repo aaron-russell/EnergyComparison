@@ -22,6 +22,56 @@ function createSearchIcon() {
   return icon;
 }
 
+function createMenuIcon() {
+  const icon = document.createElementNS(svgNamespace, 'svg');
+  icon.setAttribute('viewBox', '0 0 20 20');
+  icon.setAttribute('aria-hidden', 'true');
+  for (const y of [5, 10, 15]) {
+    const line = document.createElementNS(svgNamespace, 'path');
+    line.setAttribute('d', `M3 ${y}h14`);
+    icon.append(line);
+  }
+  return icon;
+}
+
+function createDocsSidebarToggle() {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'er-docs-sidebar-toggle';
+  button.setAttribute('aria-label', 'Open handbook menu');
+  button.setAttribute('aria-controls', 'VPSidebarNav');
+  button.setAttribute('aria-expanded', 'false');
+  button.append(createMenuIcon(), document.createTextNode('Menu'));
+
+  const sync = () => {
+    const sidebarControl = document.querySelector('.VPLocalNav .menu');
+    const sidebar = document.querySelector('.VPSidebar');
+    button.hidden = !sidebarControl || window.matchMedia('(min-width: 960px)').matches;
+    button.setAttribute('aria-expanded', String(Boolean(sidebar?.classList.contains('open'))));
+  };
+
+  button.addEventListener('click', () => {
+    const sidebar = document.querySelector('.VPSidebar');
+    if (sidebar?.classList.contains('open')) {
+      document.querySelector('.VPBackdrop')?.click();
+    } else {
+      document.querySelector('.VPLocalNav .menu')?.click();
+    }
+    sync();
+  });
+
+  const observer = new MutationObserver(sync);
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class'],
+    childList: true,
+    subtree: true,
+  });
+  window.addEventListener('resize', sync);
+  sync();
+  return button;
+}
+
 function createBrand() {
   const brand = createLink('/', '', 'er-site-brand');
   brand.setAttribute('aria-label', 'Energy Replay home');
@@ -40,10 +90,11 @@ function createBrand() {
   return brand;
 }
 
-function createNavigation(appIsCurrent) {
+function createNavigation(appIsCurrent, docsIsCurrent) {
   const navigation = document.createElement('nav');
   navigation.className = 'er-site-menu';
   navigation.setAttribute('aria-label', 'Main navigation');
+  if (docsIsCurrent) navigation.append(createDocsSidebarToggle());
   navigation.append(
     createLink('/docs/guide/using-the-app.html', 'How it works'),
     createLink('/docs/guide/privacy-and-energy-data.html', 'Privacy'),
@@ -72,9 +123,10 @@ class EnergySiteHeader extends HTMLElement {
     if (this.hasChildNodes()) return;
 
     const appIsCurrent = window.location.pathname.startsWith('/app');
+    const docsIsCurrent = window.location.pathname.startsWith('/docs/');
     const header = document.createElement('header');
     header.className = 'er-site-header';
-    header.append(createBrand(), createNavigation(appIsCurrent));
+    header.append(createBrand(), createNavigation(appIsCurrent, docsIsCurrent));
     this.append(header);
   }
 }
